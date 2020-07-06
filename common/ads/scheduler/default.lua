@@ -21,7 +21,7 @@ module(..., package.seeall)
 -----------------------------------------------------------------------------
 function new(self, core)
     -- Inherit from super class
-    local parent = require('trends.scheduler')
+    local parent = require('ads.scheduler')
     setmetatable(self, {__index = parent})
     return setmetatable({core = core, modules = {}}, {__index=self})
 end

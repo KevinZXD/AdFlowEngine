@@ -24,7 +24,7 @@ module(..., package.seeall)
 function init(core)
     local  c = core.service_conf.scheduler
     if not c or c == '' then
-        c = 'trends.scheduler.default'
+        c = 'ads.scheduler.default'
     end
     local t = require(c)
     return t:new(core)

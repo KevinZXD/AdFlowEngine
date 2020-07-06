@@ -24,7 +24,7 @@ function init(core)
 
     local c = core.service_conf.strategy
     if c and c ~= '' then
-        c='trends.'..c
+        c='ads.'..c
         local t = require(c)
         local t_c = t:new(core)
         t_c:run(core)

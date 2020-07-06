@@ -20,7 +20,7 @@ local _M = {}
 -- @return 初始化后的对象
 -----------------------------------------------------------------------------
 function _M.new(self, core)
-    local parent = require('trends.strategy')
+    local parent = require('ads.strategy')
     setmetatable(self, {__index=parent})
     local m = {core = core}
     return setmetatable(m, {__index = self})

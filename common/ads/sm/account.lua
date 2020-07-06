@@ -22,7 +22,7 @@ local name = ...
 -- @return 生成的对象
 -----------------------------------------------------------------------------
 function new(self, smid, core)
-    local parent = require('trends.module')
+    local parent = require('ads.module')
     setmetatable(self, {__index=parent})
     local m = {id = smid, name = name, core = core}
     return setmetatable(m, {__index=self})

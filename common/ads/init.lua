@@ -20,6 +20,6 @@ module(..., package.seeall)
 -- @return 返回调用者自身对象，自身对象中此模块封装的各项数据
 -----------------------------------------------------------------------------
 function init(core)
-    local init_t = require('trends.init.default')
+    local init_t = require('ads.init.default')
     init_t.run(core)
 end

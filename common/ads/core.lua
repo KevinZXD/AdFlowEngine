@@ -32,11 +32,11 @@ end
 -----------------------------------------------------------------------------
 function run(self)
     local request_r = require('lib.request') -- request请求数据处理
-    local init = require('trends.init') -- 给self常用几个字段赋值，初始化常用数据
+    local init = require('ads.init') -- 给self常用几个字段赋值，初始化常用数据
     local services = require('config.services') -- 场景名称和处理文件对照表
-    local strategy = require('trends.strategy') -- 场景策略
+    local strategy = require('ads.strategy') -- 场景策略
     local params_r = require('service.params') -- 格式化参数，场景和参数对应起来
-    local scheduler = require('trends.scheduler') -- 并行调度处理各个请求
+    local scheduler = require('ads.scheduler') -- 并行调度处理各个请求
     local cjson = require('cjson') -- 引入json处理类
 
     self.request = request_r:new() -- 初始化请求参数
