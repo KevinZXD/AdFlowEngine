@@ -36,7 +36,7 @@ function IDX:init(req_body, uve)
     self.req_body = req_body
     self.post_data = {} -- 请求广告引擎需要的POST数据
     -- 本次流量要出哪些产品线的广告 {"A", "B",...}
-    self.strategy_products = {} -- 业务策略中指出的且IDX已支持的产品线, 数组
+    self.strategy_products = uve.strategy_products -- 业务策略中指出的且IDX已支持的产品线, 数组
     self.products = {} -- 经过流量控制等过滤后，最终决定访问哪些产品线, 数组
     self.module_dict = {} -- 对应各个引擎模块 {"product":module, ...}
     self.capture_requests = {} -- capture的请求串，数组
@@ -265,152 +265,13 @@ function IDX:apply_big_v_strategy()
     end
 end
 
--- WAX接入业务策略
--- 接入场景 mainfeed & app & (ios||android) (不下发iPad，根据device.model判定)
--- 主信息流首位PDB类型候选优先策略
-function IDX:apply_wax_strategy()
-    if self.uve.service == D.SERVICES.MAINFEED then
-        local mainfeed_bid1_permit_pdb = IDXWL.is_permit_mainfeed_pdb(self.uve.idx_id)
-        self.mainfeed_bid1_permit_pdb = mainfeed_bid1_permit_pdb or false -- 默认值保护
-    end
 
-    if self.is_model_iPad then
-        self.uve.strategy.product[D.PRODUCTS.WAX] = nil
-        return
-    end
-    --ngx.log(ngx.DEBUG, "strategy.products", IUtils.json_encode(self.uve.strategy.product))
-end
-
--- mainfeed 不下发AddFans
--- idx这里做严格控制
-function IDX:apply_addfans_strategy()
-    if self.uve.service == D.SERVICES.MAINFEED then
-        self.uve.strategy.product[D.PRODUCTS.ADDFANS] = nil
-    end
-end
-
--- FeedCPD策略
---   1. 只接入热门微博流
---   2. 且, 前向刷新下发，后向刷新不下发
-function IDX:apply_feedcpd_strategy()
-    local uid = self.uve.user.uid
-    if self.uve.service == D.SERVICES.HOT_TWEETS_FEED
-            and self.uve.ext.is_loadmore == "0"  then
-        return
-    end
-    self.uve.strategy.product[D.PRODUCTS.FEEDCPD] = nil
-    --ngx.log(ngx.DEBUG, "strategy.products", IUtils.json_encode(self.uve.strategy.product))
-end
-
--- 超粉策略
--- 大v或全局黑名单用户不出超粉
-function IDX:apply_sfst_strategy()
-    -- 对于全局黑名单或大v黑名单中用户过滤超粉广告
-    local products = {}
-    if IdxBlackList.is_default_black_or_big_v_user(self.uve.user.uid) then
-        self.uve.strategy.product[D.PRODUCTS.SFST] = nil
-        self.is_black_or_big_v_uid = true  --标记当前访客
-    end
-end
-
--- 粉条策略
--- 主信息流无广告位1请求粉条时, 大v或全局黑名单中的用户不出粉条
-function IDX:apply_topfans_strategy()
-    if self.uve.service ~= D.SERVICES.MAINFEED then
-        return
-    end
-    if self.is_black_or_big_v_uid and not self.req_has_pos_1 then
-        self.uve.strategy.product[D.PRODUCTS.TOPFANS] = nil
-    end
-end
-
--- 非条内容定向正文页策略
-function IDX:apply_ff_ct_strategy()
-    if self.uve.service ~= D.SERVICES.SINGLE_PAGE then
-        return
-    end
-    if IDXWL.is_ff_ct_gray_user(self.uve.user.uid) then
-        return
-    end
-    self.uve.strategy.product[D.PRODUCTS.FANSTOPEXTEND] = nil
-    --ngx.log(ngx.DEBUG, "strategy.products", IUtils.json_encode(self.uve.strategy.product))
-end
-
--- 极速版策略
-function IDX:apply_weibolite_strategy()
-    if self.flow_type ~= D.FLOW_TYPE.NOMADIC then
-        return
-    end
-
-    if self.uve.service ~= D.SERVICES.WEIBOLITE_MAINFEED
-            and self.uve.service ~= D.SERVICES.WEIBOLITE_HOT then
-        return
-    end
-    -- 无UID则不请求超粉
-    self.uve.strategy.product[D.PRODUCTS.SFST] = nil
-end
-
--- 应用业务策略
--- 根据uve.strategy，分析请求哪几个产品线，并require对应的模块
-function IDX:apply_strategy()
-    -- 大v或全局黑访客标注
-    self:apply_big_v_strategy()
-    self:apply_wax_strategy()
-    self:apply_addfans_strategy()
-    self:apply_feedcpd_strategy()
-    --2018/07/26 下线大v黑名单和全局黑名单对超粉的过滤
-    --self:apply_sfst_strategy()
-    self:apply_topfans_strategy()
-    --ngx.log(ngx.DEBUG, "strategy.products", IUtils.json_encode(self.uve.strategy.product))
-    self:apply_weibolite_strategy()
-    --ngx.log(ngx.DEBUG, "strategy.products", IUtils.json_encode(self.uve.strategy.product))
-    self:apply_ff_ct_strategy()
-
-    local products = {}
-    for product,_ in pairs(self.uve.strategy.product) do
-        self.stats.product[product] = {}
-        if D.PRODUCT_MODNAMES[product] ~= nil then
-            table.insert(products, product)
-            self.stats.product[product].rc = D.PRODUCT_STATUS.OK
-        else
-            ngx.log(ngx.ALERT, "No module match for product " .. product)
-            self.stats.product[product].rc = D.PRODUCT_STATUS.NOT_FOUND_MODULE
-        end
-    end
-    self.products = products
-    self.strategy_products = products
-end
 
 -- 流量控制：流量百分比、降级等
 function IDX:flow_control()
 
 end
 
--- 分组场景流量过滤
-function IDX:prerequest_single_page_filter()
-
-end
-
--- 分组场景流量过滤
-function IDX:prerequest_groupfeed_filter()
-    -- 分组feed请求规则
-    -- - 移动端微博版本<"600"，不出任何广告，即不请求任何广告引擎
-    -- - 其他正常出
-    -- - 因为在低于600的版本中，加关注按钮渲染可能有问题
-end
-
-
--- 发起请求之前的过滤
-function IDX:prerequest_filter()
-
-    self:prerequest_groupfeed_filter()
-    -- self:prerequest_single_page_filter() -- 暂时无逻辑，先注释掉
-end
-
--- 解析 AlayaCore画像请求
-function IDX.prerequest_parse_alaya_flow_profile(self, resp)
-
-end
 
 function IDX:prerequest_handle()
     local profile = require('profile')
@@ -421,63 +282,11 @@ end
 
 --根据流量类型采取过滤产品线等策略
 function IDX:apply_flow_strategy()
-    if self.flow_type ~= D.FLOW_TYPE.NOMADIC then
-        return
-    end
-    -- 对于没有uid和vid的流量, 若获取aid失败, 则只请求WAX
-    if not IUtils.is_non_empty_string(self.aid) and next(self.products) then
-        local filtered_products = {}
-        for _,product in ipairs(self.products) do
-            if product ~= D.PRODUCTS.WAX then
-                self.stats.product[product].rc = D.PRODUCT_STATUS.NOT_FOUND_AID
-            else
-                table.insert(filtered_products, product)
-            end
-        end
-        -- 替换原IDX支持的产品线列表
-        self.products = filtered_products
-    end
+
 end
 
--- 依据产品和场景获取产品应该下发的广告位
--- 品速融超粉灰度版本
 function IDX:get_imps_with_product(product)
-    local imp = {}
-    local uid = self.uve.user.uid
 
-    -- hot_tweets_feed场景广告位下发逻辑
-    if self.uve.service == D.SERVICES.HOT_TWEETS_FEED then
-        if product == D.PRODUCTS.TOPFANS then
-            table.insert(imp, self.uve.imp[1]) --仅允许在热门流场景下发一个position!=1的广告位请求粉条
-            return imp
-        end
-        if product == D.PRODUCTS.FEEDCPD then
-            table.insert(imp, self.uve.imp[1])
-            return imp
-        end
-        return self.uve.imp
-    end
-
-    -- mainfeed场景广告位下发逻辑
-    if self.uve.service == D.SERVICES.MAINFEED then
-        return imp
-    end
-
-
-
-    -- 其他场景广告位下发逻辑
-    -- 粉条: 有广告位1时仅下发首位给粉条, 无广告位1时不请求粉条(广告位1不再被粉条独享)
-    -- 其他产品线: 下发所有广告位
-    if product == D.PRODUCTS.TOPFANS then
-        if not self.req_has_pos_1 then
-            imp = {}
-            return imp
-        end
-        table.insert(imp, self.uve.imp[1])
-        return imp
-    end
-
-    return self.uve.imp
 end
 
 -- 根据产品线下发实验策略
@@ -485,17 +294,6 @@ end
 -- @return 该产品线应下发的实验信息
 function IDX:get_experiment_with_product(product)
     -- 为各产品线下发实验
-    local experiment = {}
-    local zones = D.PRODUCT_EXPERIMENT_ZONES[product] or D.PRODUCT_EXPERIMENT_ZONES["default"]
-    for _, s in ipairs(zones) do
-        local s_exp = self.faraday_experiment[s]
-        if IUtils.is_non_empty_table(s_exp) then
-            for strategy, detail in pairs(s_exp) do
-                experiment[strategy] = detail
-            end
-        end
-    end
-    return experiment
 end
 
 -- 初始化试验策略
@@ -513,47 +311,9 @@ end
 -- 特殊广告位请求前过滤
 -- 目标: 当特殊广告位不包含某产品线下任何候选类型, 则不对该产品线下发该广告位
 function IDX:filter_product_imps(product, imps)
-    if not IUtils.is_non_empty_table(imps) then
-        return {}
-    end
 
-    -- 兼容老粉丝通, 目前老粉丝通只有品牌速递一个子产品线
-    if product == D.PRODUCTS.FST then
-        product = D.PRODUCTS.BRAND
-    end
-
-    local filtered_imps = {}
-    for _, imp in ipairs(imps) do
-        local imp_bidding_weight = self.imp_bidding_weight_dict[tostring(imp.position)]
-        if imp_bidding_weight ~= nil then
-            -- 特殊广告位
-            for ctype, _ in pairs(imp_bidding_weight) do
-                local pcode = IUtils.split(ctype, '_')[1]
-                if pcode == D.PRODUCT_CODES[product] then
-                    table.insert(filtered_imps, imp)
-                    break
-                end
-            end
-        else
-            -- 普通广告位
-            table.insert(filtered_imps, imp)
-        end
-    end
-    return filtered_imps
 end
 
--- 设置真实曝光结算标识
-function IDX:init_visual_settle_flag()
-    local is_vis_settle = self.is_realexpo_settle
-    -- 2019/12/16 pc端取消下发真实曝光结算标识
-    -- http://git.intra.weibo.com/ad/adx/FlowEngine/issues/141
-    local weibo_from = self.uve.device.ext.from or ""
-    if weibo_from == "" or weibo_from == "pc" then
-        is_vis_settle = false
-    end
-
-    return is_vis_settle
-end
 
 -- 初始化广告引擎模块
 -- @return true 成功，false 失败
@@ -561,74 +321,7 @@ function IDX:init_module()
     local module_dict = {}
     for _,product in ipairs(self.strategy_products) do
         local module_class = PRODUCT_MODULE_CLASSES[product]
-
-        -- 根据不同场景不同产品下发不同的广告位
-        local uve = utils.deepcopy(self.uve)
-        local product_imps = self:get_imps_with_product(product)
-        uve.imp = self:filter_product_imps(product, product_imps)
-
-        -- 根据产品线获取实验信息(下游)
-        -- 备注: 此处expriment拼写问题来源于文档约定遗留问题
-        uve.expriment = self:get_experiment_with_product(product)
-        -- 设置可见曝光结算标识
-        local is_vis_settle = self:init_visual_settle_flag()
         local m = module_class:new()
-        if product == D.PRODUCTS.FST then
-            local params = {
-                follow_list = self.follow_list,
-                follow_list_json_str = self.follow_list_json_str,
-                product_status = IUtils.deepcopy(self.stats.product),
-                is_vis_settle = is_vis_settle,
-                user_identifier = self.user_identifier,
-                ad_style = self.ad_style,
-                imp_bwt_dict = self.imp_bidding_weight_dict
-            }
-            m:init(uve, params)
-
-            for _,v in ipairs(self.fst_products) do
-                module_dict[v] = m
-            end
-        else
-            local params = {
-                follow_list = self.follow_list,
-                follow_list_json_str = self.follow_list_json_str,
-                is_vis_settle = is_vis_settle,
-                user_identifier = self.user_identifier,
-                ad_style = self.ad_style,
-                imp_bwt_dict = self.imp_bidding_weight_dict,
-                is_mixrank_hot_tweets = self.is_mixrank_hot_tweets,
-                enable_prolong = self.enable_prolong
-            }
-
-            -- 超粉和WAX下发app_id和app_cateid, 字段类型均为string
-            if product == D.PRODUCTS.SFST or product == D.PRODUCTS.WAX then
-                params["app_id"] = self.app_id
-                params["app_cateid"] = self.app_cateid
-                params["app_act"] = self.app_act
-            end
-            -- WAX新下发life_state_wax和famous字段(看情况)
-            if product == D.PRODUCTS.WAX then
-                params["life_state_wax"] = self.life_state_wax
-                if self.famous ~= nil then
-                    params["famous"] = self.famous
-                end
-                -- 下发是否允许主信息流竞价位首位投pdb
-                params["mainfeed_bid1_permit_pdb"] = self.mainfeed_bid1_permit_pdb
-            end
-            if product == D.PRODUCTS.SFST then
-                -- 法拉第实验：合并DMP中的兴趣和实时画像数据
-                if self.enable_idx_interest_merge_strategy then
-                    if string.len(uve.ext.com_ukv) == 0 then
-                        uve.ext.com_ukv = self.uid_real_tags
-                    else
-                        if string.len(self.uid_real_tags) ~= 0 then
-                            uve.ext.com_ukv = table.concat({uve.ext.com_ukv, self.uid_real_tags}, ",")
-                        end
-                    end
-                end
-            end
-            m:init(uve, params)
-        end
         module_dict[product] = m
     end
     self.module_dict = module_dict
@@ -950,8 +643,6 @@ end
 function IDX:response_uve()
     local resp_data = {}
     resp_data.id = self.uve.id or ""
-    resp_data.respid = self.respid or ""
-    resp_data.return_code = self.stats.return_code
 
     -- 以position升序排列竞价胜出的广告
     table.sort(self.winners, function (a, b)
@@ -961,19 +652,15 @@ function IDX:response_uve()
     resp_data["data"] = {}
     for _,winner in ipairs(self.winners) do
         local resp_data_ = {}
-        resp_data_["ecpm"] = winner["ecpm"]
-        resp_data_["channel"] = winner["channel"]
+
         resp_data_["service"] = winner["service"]
-        resp_data_["business_type"] = winner["business_type"]
-        resp_data_["adengine_version"] = winner["adengine_version"]
-        resp_data_["impression_id"] = winner["impid"]
-        resp_data_["return_code"] = winner["return_code"]
+
         resp_data_["position"] = winner["position"]
-        resp_data_["render_flag"] = winner["render_flag"]
-        resp_data_["titles"] = winner["titles"]
-        resp_data_["ext"] = winner["ext"]
-        resp_data_["result"] = winner["result"]
-        resp_data_["cand_type"] = winner["cand_type"]
+        resp_data_["id"] = winner["id"]
+        resp_data_["bid_price"] = winner["bid_price"]
+        resp_data_["ad_type"] = winner["ad_type"]
+        resp_data_["product"] = winner["product"]
+        resp_data_["recommend"] = winner["recommend"]
         table.insert(resp_data["data"],resp_data_)
     end
     local cjson = require('cjson')
@@ -983,20 +670,6 @@ end
 -- 获取尾部投放的引擎未胜出的广告候选
 function IDX:get_leaves_candidates()
 
-    local cands = {}
-    for _, product in ipairs(self.strategy_products) do
-        local m = self.module_dict[product]
-        if D.TAIL_PUSH_MODULES[product] and m["get_miss_candidates"] then
-            for i, impid in ipairs(self.impids) do
-                local s_cands = m:get_miss_candidates(impid)
-                for _, cand in ipairs(s_cands) do
-                    table.insert(cands, cand)
-                end
-            end
-        end
-    end
-
-    return cands
 end
 
 -- 返回记录频次日志的请求

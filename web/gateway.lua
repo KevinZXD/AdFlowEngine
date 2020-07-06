@@ -3,6 +3,8 @@
 --- Created by xudong12.
 --- DateTime: 2020/2/26 1:25 PM
 ---
-local core_t = require('trends.core')
+local core_t = require('ad_idx.core')
 local core = core_t:new()
-core:run()
+local req_body={}
+local uve = {uid='123445',from='A10sss',ad_counts=5,strategy_products={'sfst'}}
+core:run(req_body,uve)

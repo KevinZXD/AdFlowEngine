@@ -2,6 +2,7 @@ local M = { verison = "0.0.1" }
 
 local utils = require('utils')
 local itypes = require('itypes')
+local cjson = require('cjson')
 function M:new(o)
     o = o or {}
     setmetatable(o, self)
@@ -9,8 +10,11 @@ function M:new(o)
     return o
 end
 
-function M:init(uve, params)
-
+function M:init(uve)
+    self.uve=uve
+    self.uid= uve.uid
+    self.product_name='sfst'
+    self.ad_count = uve.ad_count * 2
 end
 
 
@@ -20,7 +24,7 @@ function M:generate_request_body()
 end
 
 function M:generate_request()
-    if not itypes.is_non_empty_string(self.user_identifier) then
+    if not itypes.is_non_empty_string(self.uid) then
         return false, {}
     end
      
@@ -30,14 +34,11 @@ function M:generate_request()
     end
     local body = self.request_body
 
-    self.basic:set_request_body(body)
-
-    local body_str = IdxUtil.encode_request_body(body, self.follow_list_json_str)
+    local body_str = cjson.encode(body)
 
 
-    local api = string.format("/ad/%s/%s?api=%s&bl_key=%s&ups=%s", 
-                              D.PRODUCTS.SFST, self.uve.service,
-                              "sfst", self.user_identifier, self.ups)
+    local api = string.format("/ad/%s",
+                              self.product_name)
     local request = {
         api,
         { 
@@ -54,7 +55,7 @@ function M:parse_response(http_response)
     for k, cands in pairs(http_response) do
         local new_cands = {}
         for _,cand in ipairs(cands) do
-            if self:check_candidate(cand) ~= nil then
+            if cand ~= nil then
                 table.insert(new_cands, cand)
             end
         end
@@ -62,7 +63,7 @@ function M:parse_response(http_response)
             new_result_dict[k] = new_cands
         end
     end
-    self.basic.result_dict = new_result_dict
+    self.result_dict = new_result_dict
 
 end
 
