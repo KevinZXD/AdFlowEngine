@@ -8,6 +8,7 @@
 http://127.0.0.1:11111/ad_uve/service/mainfeed?uid=3898324509&from=1098493010&ad_counts=3
 
 [返回样例]
+
 {"ads":[{"adtype":8,"id":"4523297448293259","service":"mainfeed","product":"a","type":"ad","recommend":"热门"},
 {"adtype":8,"id":"4523297448293259","service":"mainfeed","product":"a","type":"ad","recommend":"热门"}
 ]}
