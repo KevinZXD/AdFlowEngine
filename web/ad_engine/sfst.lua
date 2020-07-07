@@ -27,7 +27,8 @@ while ad_count >= 1 do
          adtype= 8, position=ad_count,
          type= "ad",
          product="sfst",
-         bid_price= tonumber(math.random()*10), ad_version='1'
+         bid_price= tonumber(math.random()*10), ad_version='1',
+            monitor_url="第三方监控链接"
 
     })
 end

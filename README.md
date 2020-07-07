@@ -22,6 +22,7 @@ http://127.0.0.1:11111/ad_uve/service/mainfeed?uid=3898324509&from=1098493010&ad
   "position": 0,
   "recommend": "广告",
   "type": "ad" // 广告类型 ad  trends
+  "monitor_url":"第三方监控链接"
                 }
                 
 
