@@ -150,6 +150,9 @@ function IDX:prerequest_handle()
     local profile = require('ad_idx.profile')
     -- 获取用户唯一标识
     self.user_identifier_info = profile.get_user_identifier_info(self.uid)
+    if self.user_identifier_info then
+        self.uve.profile=self.user_identifier_info
+    end
 
 end
 
