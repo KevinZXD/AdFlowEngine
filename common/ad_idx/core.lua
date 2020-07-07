@@ -24,7 +24,7 @@ function IDX:new(o)
     return o
 end
 local PRODUCT_MODULE_CLASSES = {}
-local PRODUCT_MODNAMES = {sfst='sfst_module',wax='wax_module'}
+local PRODUCT_MODNAMES = {sfst='sfst_ad',wax='wax_ad'}
 for product_name,module_name in pairs(PRODUCT_MODNAMES) do
     PRODUCT_MODULE_CLASSES[product_name] = require(string.format("ad_idx.modules.%s", module_name))
 end
@@ -111,7 +111,7 @@ function IDX:parse_request()
     return true
 end
 
--- 广告黑名单过滤 只展示Brand和TopFans
+-- 广告黑名单过滤
 function IDX:apply_prefilter_black_user()
     local idx_blacklist = require('ad_idx.idx_black_list')
     if not idx_blacklist.is_black_user(self.uve.uid) then
