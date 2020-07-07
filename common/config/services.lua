@@ -16,21 +16,6 @@ module(..., package.seeall)
 -- @param
 -- Returns
 -- @return
------------------------------------------------------------------------------
-scene = {
-    modules = {
-        ['account'] = 'trends.sm.account',
-        ['ad'] = 'trends.sm.ad',
-    },
-    context = '',
-    init = '',
-    prerender = '',
-    scheduler = '',
-    strategy = 'strategy.scene',
-    render = '',
-    postrequest = '',
-    resp_raw_data = true,
-}
 
 
 mainfeed = {

@@ -25,19 +25,6 @@ function get_product(core)
     return {}, { ad = 'ad', account = 'account' }
 end
 
------------------------------------------------------------------------------
--- 获取设备类型
--- Input
--- @param core 调用者自身self
--- Returns
--- @return string 'pc'或者'mobile'
------------------------------------------------------------------------------
-function get_device_type(core)
-    if core.from == 'pc' then
-        return 'pc'
-    end
-    return 'mobile'
-end
 
 -----------------------------------------------------------------------------
 -- 判断table中是否含有value值

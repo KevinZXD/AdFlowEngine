@@ -58,7 +58,7 @@ function get_req_params(self)
     self.http_uri = '/idx/ad'
     local body = {}
     local cjson = require('cjson')
-    body.post_body = self.core.post_body
+    body.post_body = self.core.get_url
     local _, json_body = pcall(cjson.encode, body)
     return self.http_method, self.http_uri, json_body
 

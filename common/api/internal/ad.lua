@@ -17,20 +17,11 @@ function run(self)
     local cjson = require('cjson')
     ngx.req.read_body()
     local post_params = ngx.req.get_body_data()
-    local status
-    status, post_params = pcall(cjson.decode, post_params)
-
-    self.post_params = post_params
-    local mock = [[
-     {"recommend": "热门",
-      "id": "4523297448293259",
-       "service": "mainfeed",
-       "adtype": 8,
-       "type": "ad",
-       "product":"a"
-            }
-    ]]
-    ngx.print(mock)
-    ngx.eof()
-    self.finish(self)
+    post_params = cjson.decode(post_params)
+    local post_body = post_params.post_body
+    post_body.strategy_products={'sfst','wax'}
+    local core_t = require('ad_idx.core')
+    local core = core_t:new()
+    local req_body={is_debug=false}
+    core:run(req_body,post_body)
 end

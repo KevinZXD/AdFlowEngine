@@ -12,3 +12,18 @@ http://127.0.0.1:11111/ad_uve/service/mainfeed?uid=3898324509&from=1098493010&ad
 {"ads":[{"adtype":8,"id":"4523297448293259","service":"mainfeed","product":"a","type":"ad","recommend":"热门"},
 {"adtype":8,"id":"4523297448293259","service":"mainfeed","product":"a","type":"ad","recommend":"热门"}
 ]}
+
+[模块说明]
+ad_uve
+1. 广告流量管理
+2. 广告样式控制/广告产品线控制
+3. 广告渲染
+ 
+ad_idx
+1. 广告流量黑白名单过滤
+2. 广告并行获取
+3. 广告混合竞价
+
+ad_render
+1. 广告样式数据结构渲染
+

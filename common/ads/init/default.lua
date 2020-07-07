@@ -21,6 +21,8 @@ module(..., package.seeall)
 function run(core)
     core.service_name = ngx.var.uve_service_name or core.request.post_args.request.service
     core.service_conf = core.services[core.service_name]
+    core.post_body = core.request.post_args
+    core.get_url = core.request.get_args
     -- 将原始的请求数据传给子请求，用来记录日志的POST数据
 end
 
