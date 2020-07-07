@@ -28,7 +28,7 @@ mainfeed = {
     prerender = '',
     scheduler = '',
     strategy = '',
-    render = '',
+    render = 'ad_render.render',
     postrequest = '',
     resp_raw_data = true,
 }

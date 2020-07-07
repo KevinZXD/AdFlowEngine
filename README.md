@@ -8,10 +8,22 @@
 http://127.0.0.1:11111/ad_uve/service/mainfeed?uid=3898324509&from=1098493010&ad_counts=3
 
 [返回样例]
+单个广告数据
 
-{"ads":[{"adtype":8,"id":"4523297448293259","service":"mainfeed","product":"a","type":"ad","recommend":"热门"},
-{"adtype":8,"id":"4523297448293259","service":"mainfeed","product":"a","type":"ad","recommend":"热门"}
-]}
+{
+ "adtype": 8, //广告类型
+ "id": "wax_ad_id_0",
+ "product": "wax", //产品
+ "ad_version": "1",
+ "bid_price": 0.54892783198761, //竞价价格
+ "ad_render": [
+   "广告物料填充" //根据id单独获取广告物料数据按照指定的渲染类型渲染广告
+                    ],
+  "position": 0,
+  "recommend": "广告",
+  "type": "ad" // 广告类型 ad  trends
+                }
+                
 
 [模块说明]
 ad_uve

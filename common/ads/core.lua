@@ -37,6 +37,7 @@ function run(self)
     local strategy = require('ads.strategy') -- 场景策略
     local params_r = require('service.params') -- 格式化参数，场景和参数对应起来
     local scheduler = require('ads.scheduler') -- 并行调度处理各个请求
+    local render = require('ads.render')
     local cjson = require('cjson') -- 引入json处理类
 
     self.request = request_r:new() -- 初始化请求参数
@@ -52,6 +53,7 @@ function run(self)
     self.scheduler = scheduler.init(self)
     self.scheduler:run() -- 生成当前存在的产品线的各处理文件的对象，并执行调度方法
     self.strategy = strategy.init(self) -- 场景策略 services 配置（产品PM对一些场景提出的一些数据配置策略在此模块处理）
+    render.run(self)
     local _resp = {ads = {} }
     if self.scheduler.modules then -- 将各module返回的数据封装到data里
         for _, mo in pairs(self.scheduler.modules) do
@@ -60,6 +62,7 @@ function run(self)
             end
         end
     end
+
     local f, resp_str = pcall(cjson.encode, _resp)
     if not f then
         resp_str = '{"errno": 99, "error":"encode error"}'
