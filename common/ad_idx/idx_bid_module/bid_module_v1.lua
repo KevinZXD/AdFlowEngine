@@ -20,11 +20,17 @@ function _M.bid(cands)
     if type(cands)~='table' or next(cands) == nil then
         return nil
     end
+    local all_ads = {}
+    for _,item in pairs(cands) do
+        for _, ad in pairs(item) do
+            table.insert(all_ads,ad)
+        end
+    end
     local function bid_price_comp(bid_ad1,bid_ad2)
         return bid_ad1.bid_price > bid_ad2.bid_price
     end
-    table.sort(cands,bid_price_comp)
-
+    table.sort(all_ads,bid_price_comp)
+    return all_ads
     end
 
 return _M

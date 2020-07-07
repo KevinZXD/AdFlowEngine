@@ -6,6 +6,7 @@ function M:new(o)
     o = o or {}
     setmetatable(o, self)
     self.__index = self
+    self.product_name='sfst'
     return o
 end
 
@@ -15,13 +16,13 @@ end
 
 
 function M:generate_request_body(params)
-    self.product_name='sfst'
+
     self.request_body = utils.deepcopy(params)
     return true
 end
 
 function M:generate_request(params)
-     
+
     local rc = self:generate_request_body(params)
     if rc == false then
         return false, {}

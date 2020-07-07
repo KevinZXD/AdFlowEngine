@@ -15,7 +15,7 @@ local _M = { _VERSION = "0.0.1"}
 
 local BID_MODELS = {
     v2 = DefaultBidModelV2,
-    V1 = DefaultBidModelV1
+    v1 = DefaultBidModelV1
 }
 
 function _M:new(o)

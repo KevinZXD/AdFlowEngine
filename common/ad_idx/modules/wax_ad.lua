@@ -6,6 +6,7 @@ function M:new(o)
     o = o or {}
     setmetatable(o, self)
     self.__index = self
+    self.product_name='wax'
     return o
 end
 
@@ -15,7 +16,6 @@ end
 
 
 function M:generate_request_body(params)
-    self.product_name='wax'
     self.request_body = utils.deepcopy(params)
     return true
 end
@@ -26,9 +26,7 @@ function M:generate_request(params)
         return false, {}
     end
     local body = self.request_body
-
     local body_str = cjson.encode(body)
-
     local api = "/ad/"..self.product_name
     local request = {
         api,

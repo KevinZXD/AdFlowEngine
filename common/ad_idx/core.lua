@@ -192,7 +192,7 @@ end
 -- @return true 成功，false 失败
 function IDX:init_module()
     local module_dict = {}
-    for _,product in ipairs(self.strategy_products) do
+    for _,product in pairs(self.products) do
         local module_class = PRODUCT_MODULE_CLASSES[product]
         local m = module_class:new(self.uve)
         module_dict[product] = m
@@ -205,11 +205,13 @@ end
 function IDX:generate_requests()
     -- 若某product生成request失败，则不请求该product的引擎，它也不参与竞价。
     local products = {}
-    for _,product in ipairs(self.products) do
+    for _,product in pairs(self.products) do
         local m = self.module_dict[product]
         local rc, request = m:generate_request(self.uve)
+        if self.is_debug then
+            ngx.say('reload module  '.. m.product_name)
+        end
         if rc == true then
-
             table.insert(products, product)
             table.insert(self.capture_requests, request)
         end
@@ -224,12 +226,20 @@ function IDX:capture_multi()
         return false
     end
     self.responses = { ngx.location.capture_multi(self.capture_requests) }
+    if self.is_debug then
+        ngx.say(cjson.encode(self.capture_requests))
+    end
+
 
 end
 
 -- 解析各广告引擎的返回结果
 function IDX:parse_responses()
     for i,product in ipairs(self.products) do
+        if self.is_debug then
+            ngx.say(product..'  response')
+            ngx.say(cjson.encode(self.responses[i]))
+        end
         local m = self.module_dict[product]
         m:parse_response(self.responses[i])
         table.insert(self.target_ads,m.result_dict)
@@ -242,6 +252,9 @@ function IDX:parse_responses()
             ngx.log(ngx.ERR, string.format("capture %s ",
                     product))
         end
+    end
+    if self.uve.ad_show then
+        ngx.say(cjson.encode(self.target_ads))
     end
 end
 
@@ -347,18 +360,7 @@ end
 function IDX:response_uve()
     local resp_data = {}
     resp_data.id = self.uve.uid or ""
-    resp_data["data"] = {}
-    for _,winner in ipairs(self.winners) do
-        local resp_data_ = {}
-        resp_data_["service"] = winner["service"]
-        resp_data_["position"] = winner["position"]
-        resp_data_["id"] = winner["id"]
-        resp_data_["bid_price"] = winner["bid_price"]
-        resp_data_["ad_type"] = winner["ad_type"]
-        resp_data_["product"] = winner["product"]
-        resp_data_["recommend"] = winner["recommend"]
-        table.insert(resp_data["data"],resp_data_)
-    end
+    resp_data["data"] = self.winners
     ngx.say(cjson.encode(resp_data))
 end
 
