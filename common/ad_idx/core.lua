@@ -4,16 +4,6 @@
 --- DateTime: 2020/7/6 4:54 PM
 ---
 
-
-
-local function get_respid()
-    local time=os.time()
-    math.randomseed(time)
-    local rand=math.random(100000,999999)
-    return tostring(time)..tostring(rand)
-end
-
-
 local IDX = {}
 local utils = require('lib.utils')
 local cjson = require('cjson')
@@ -91,7 +81,6 @@ function IDX:convert_bw_list2dict(bwt_list)
 end
 
 -- 指定特殊广告位竞价权重设置
--- 包含: 主信息流首位和竞价位末位，分组流首位及热门微博流首位
 -- @return 生成成功返回true，否则返回false
 function IDX:assign_imp_bidding_weight()
 
@@ -299,7 +288,7 @@ function IDX:apply_floor_price(cand, cash_coef, product_coef, channel_coef)
 end
 
 
--- 竞价前处理逻辑 品速融入超粉灰度版本
+-- 竞价前处理逻辑
 --1. 获取所有广告位所有候选
 --2. 设置所有候选竞价权重
 --3. 计算所有候选竞价值并进行底价过滤
@@ -397,7 +386,6 @@ end
 --     这里只发起请求，不会处理响应，也不关心成功失败
 --  3. 这里均用 self.strategy_products 来遍历module
 --     有些业务不获取广告数据，但需IDX记录某些信息，如
---     AddFans的移动端不感兴趣，不候补广告，但需记录不感兴趣
 function IDX:finalize_handler()
     -- 先返回数据给UVE，后做其他处理
     -- NOTE: 返回给UVE的耗时没有包含写频次，记录曝光日志的时间

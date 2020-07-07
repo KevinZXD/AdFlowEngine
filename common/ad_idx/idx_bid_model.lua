@@ -9,12 +9,12 @@
 --  Note: 本模块及其子模块[能且仅能]修改cands[i].inter内的数据，对其他数据结构不得做修改。
 
 
-local DefaultBidModelV2 = require("ad_idx.idx_bid_module.bid_module")
+local DefaultBidModelV3 = require("ad_idx.idx_bid_module.bid_module_v3")
 local DefaultBidModelV1 = require("ad_idx.idx_bid_module.bid_module_v1")
 local _M = { _VERSION = "0.0.1"}
 
 local BID_MODELS = {
-    v2 = DefaultBidModelV2,
+    v3 = DefaultBidModelV3,
     v1 = DefaultBidModelV1
 }
 
