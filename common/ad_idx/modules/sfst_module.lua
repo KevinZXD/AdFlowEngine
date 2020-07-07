@@ -14,7 +14,6 @@ function M:init(uve)
     self.uve=uve
     self.uid= uve.uid
     self.product_name='sfst'
-    self.ad_count = uve.ad_count * 2
 end
 
 
@@ -36,7 +35,6 @@ function M:generate_request()
 
     local body_str = cjson.encode(body)
 
-
     local api = "/ad/sfst"
     local request = {
         api,
@@ -45,24 +43,13 @@ function M:generate_request()
             body = body_str
         }
     }
-
     return true, request
 end
 
 function M:parse_response(http_response)
-    local new_result_dict = {}
-    for k, cands in pairs(http_response) do
-        local new_cands = {}
-        for _,cand in ipairs(cands) do
-            if cand ~= nil then
-                table.insert(new_cands, cand)
-            end
-        end
-        if next(new_cands) ~= nil then
-            new_result_dict[k] = new_cands
-        end
-    end
-    self.result_dict = new_result_dict
+    local body = http_response.body
+    local body_json = cjson.decode(body)
+    self.result_dict = body_json
 
 end
 

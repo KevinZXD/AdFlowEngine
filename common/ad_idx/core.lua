@@ -46,7 +46,7 @@ function IDX:init(req_body, uve)
     self.responses = {} -- 并行请求各业务线的返回结果，数组
     self.target_ads= {}
     self.winners = {} -- 竞价胜出的广告, 数组
-    self.is_debug = true
+    self.is_debug = req_body.is_debug
 end
 
 -- 检查Sfst的请求是否有效
@@ -194,11 +194,10 @@ function IDX:init_module()
     local module_dict = {}
     for _,product in ipairs(self.strategy_products) do
         local module_class = PRODUCT_MODULE_CLASSES[product]
-        local m = module_class:new()
+        local m = module_class:new(self.uve)
         module_dict[product] = m
     end
     self.module_dict = module_dict
-    self.module_dict['sfst'] = require('ad_idx.modules.sfst_module')
     return true
 end
 
