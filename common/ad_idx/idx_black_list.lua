@@ -4,12 +4,12 @@
 --- DateTime: 2020/7/6 5:12 PM
 ---
 
-local IUtils = require('itypes')
-local _M = {_VERSION = "0.0.1"}
+local IUtils = require('lib.itypes')
+local _M = { _VERSION = "0.0.1" }
 
 -- 判断当前访客uid是否在全局黑名单中
 -- @uid string 当前访客uid
-function _M.is_black_user(self,uid)
+function _M.is_black_user(self, uid)
     if not IUtils.is_non_empty_string(uid) then
         return false
     end
@@ -20,8 +20,12 @@ function _M.is_black_user(self,uid)
     end
     return false
 end
-function _M.is_in_black_list_uid(self,uid)
+
+function _M.is_in_black_list_uid(self, uid)
+         return false
 
 end
+
+
 
 return _M

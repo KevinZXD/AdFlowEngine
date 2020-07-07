@@ -15,7 +15,8 @@ end
 
 
 local IDX = {}
-local utils = require('utils')
+local utils = require('lib.utils')
+local cjson = require('cjson')
 function IDX:new(o)
     o = o or {}
     setmetatable(o, self)
@@ -28,20 +29,24 @@ for product_name,module_name in pairs(PRODUCT_MODNAMES) do
     PRODUCT_MODULE_CLASSES[product_name] = require(string.format("ad_idx.modules.%s", module_name))
 end
 
+
 -- 初始化
 -- 所有可能用到的变量，在此声明
 -- param req_body为uve请求体body字符串
 -- param uve 解析后的uve请求体结构
 function IDX:init(req_body, uve)
+    self.uve=uve
     self.req_body = req_body
     self.post_data = {} -- 请求广告引擎需要的POST数据
     -- 本次流量要出哪些产品线的广告 {"A", "B",...}
-    self.strategy_products = uve.strategy_products -- 业务策略中指出的且IDX已支持的产品线, 数组
-    self.products = {} -- 经过流量控制等过滤后，最终决定访问哪些产品线, 数组
+    self.strategy_products = {'sfst'} -- 业务策略中指出的且IDX已支持的产品线, 数组
+    self.products ={'sfst'} -- 经过流量控制等过滤后，最终决定访问哪些产品线, 数组
     self.module_dict = {} -- 对应各个引擎模块 {"product":module, ...}
     self.capture_requests = {} -- capture的请求串，数组
     self.responses = {} -- 并行请求各业务线的返回结果，数组
+    self.target_ads= {}
     self.winners = {} -- 竞价胜出的广告, 数组
+    self.is_debug = true
 end
 
 -- 检查Sfst的请求是否有效
@@ -52,107 +57,21 @@ end
 
 -- 对上游请求进行初始化
 function IDX:init_request()
-    -- 按照广告位降低重新排序imp
-    table.sort(self.uve.imp, function(a, b)
-        return a.position < b.position
-    end)
 
-    -- 标识本次请求是否包含广告位1
-    for _,imp in ipairs(self.uve.imp) do
-        if imp.position == 1 then
-            self.req_has_pos_1 = true
-        end
-    end
-
-    -- 获取竞价广告位首位的position取值
-    self:get_req_first_bid_pos()
-
-    -- 获取竞价广告位首位的position取值
-    self:get_req_last_bid_pos()
-
-    -- 为每个position生成impid
-    for i,v in ipairs(self.uve.imp) do
-        v.impid = string.format("%s%02d", self.uve.idx_id, v.position)
-        table.insert(self.impids, v.impid)
-        -- 视频后推荐流次首位不进行尾部填充, 在此处删除
-        if self.uve.service ~= D.SERVICES.VIDEOFEED or i ~= 2 then
-            table.insert(self.miss_impids, {impid = v.impid, position = v.position})
-        end
-        -- 建立impid和请求体中imp[i]结构关联关系
-        self.imp_dict[v.impid] = v
-    end
-
-    -- 主信息流竞价位首位WAX-PDB按比例优先规则
-    if self.uve.service == D.SERVICES.MAINFEED then
-        local mainfeed_bid1_permit_pdb = IDXWL.is_permit_mainfeed_pdb(self.uve.idx_id)
-        self.mainfeed_bid1_permit_pdb = mainfeed_bid1_permit_pdb or false -- 默认值保护
-    end
-
-    -- 根据权重对bidding_weight降序排序
-    local temp_list = {}
-    for k, v in pairs(self.uve.strategy.bidding_weight) do
-        table.insert(temp_list, {ctype = k, cwt = v})
-    end
-    table.sort(temp_list, function(a, b)
-        return a.cwt < b.cwt
-    end)
-    self.sortted_strategy_bidding_weight = temp_list
-
-    -- 特殊广告位指定竞价权重
-    self:assign_imp_bidding_weight()
-    --ngx.log(ngx.DEBUG, string.format("imp bidding weight dict: %s", IUtils.json_encode(self.imp_bidding_weight_dict)))
-
-    -- 下发特殊广告位竞价权重
-    for _, imp in ipairs(self.uve.imp) do
-        if self.imp_bidding_weight_dict[tostring(imp.position)] ~= nil then
-            imp.bidding_weight = self.imp_bidding_weight_dict[tostring(imp.position)]
-        end
-    end
-    self.uve.strategy["enable_bidding_weight"]= true
 end
 
 -- 获取单次请求的竞价广告位首位
 -- 备注：仅在主信息流和分组流区分竞价位首位
 -- 例如某次下发的广告位为[1,3,10,15], 竞价广告位首位为3
 function IDX:get_req_first_bid_pos()
-    -- 主信息流和分组信息流
-    local first_bid_pos = -1
-    if self.uve.service == D.SERVICES.MAINFEED or
-            self.uve.service == D.SERVICES.GROUPFEED then
-        if self.req_has_pos_1 then
-            -- 请求包含广告位1且广告位个数大于等于2, 取第二个广告位
-            if #self.uve.imp > 1 then
-                first_bid_pos = self.uve.imp[2].position
-            end
-        else
-            -- 请求不包含广告位1, 则取第一个广告位
-            first_bid_pos = self.uve.imp[1].position
-        end
-    else
-        first_bid_pos = self.uve.imp[1].position
-    end
-    self.req_first_bid_pos = first_bid_pos
+
 end
 
 -- 获取单次请求的竞价广告位末位
 -- 备注: 仅在主信息流区分竞价位末位
 -- 例如某次下发的广告位为[1,3,10,15], 竞价广告位末位为15
 function IDX:get_req_last_bid_pos()
-    local last_bid_pos = -1
-    if self.uve.service == D.SERVICES.MAINFEED then
-        if self.req_has_pos_1 then
-            -- 请求包含广告位1且广告位个数大于等于2, 取最后一个广告位
-            if #self.uve.imp > 1 then
-                last_bid_pos = self.uve.imp[#self.uve.imp].position
-            end
-        else
-            -- 直接取最后一个广告位
-            last_bid_pos = self.uve.imp[#self.uve.imp].position
-        end
-    else
-        last_bid_pos = self.uve.imp[#self.uve.imp].position
-    end
-    self.req_last_bid_pos = last_bid_pos
+
 end
 
 -- 特殊广告位可出候选类型过滤
@@ -161,41 +80,14 @@ end
 -- @param is_wl 过滤模式, true代表白名单过滤, false代表黑名单过滤
 -- @return 过滤后的结果
 function IDX:filter_imp_cand_type(origin_bidding_weight, cand_types, is_wl)
-    if is_wl == nil then
-        return {}
-    end
-    origin_bidding_weight = origin_bidding_weight or {}
-    cand_types = cand_types or {}
 
-    -- 生成特殊广告位候选权重
-    local imp_sortted_bidding_weight = {}
-    for _, cnode in ipairs(origin_bidding_weight) do
-        if is_wl then
-            if cand_types[cnode.ctype] then
-                table.insert(imp_sortted_bidding_weight, cnode)
-            end
-        else
-            if not cand_types[cnode.ctype] then
-                table.insert(imp_sortted_bidding_weight, cnode)
-            end
-        end
-    end
-
-    return imp_sortted_bidding_weight
 end
 
 -- 将排序后的竞价权重列表转为字典
 -- @param bwt_list 竞价权重列表
 -- @return table 竞价权重字典
 function IDX:convert_bw_list2dict(bwt_list)
-    if not bwt_list or not next(bwt_list) then
-        return {}
-    end
-    local bwt_dict = {}
-    for _, node in ipairs(bwt_list) do
-        bwt_dict[node.ctype] = node.cwt
-    end
-    return bwt_dict
+
 end
 
 -- 指定特殊广告位竞价权重设置
@@ -216,17 +108,13 @@ end
 -- 检查uve的请求数据是否合法
 -- @return 有效返回true，否则返回false
 function IDX:parse_request()
-    local uve = self.uve
-    uve.idx_id = uve.id
-    if uve.uid == nil or uve.from == nil or uve.ad_counts==nil then
-        return false
-    end
     return true
 end
 
 -- 广告黑名单过滤 只展示Brand和TopFans
 function IDX:apply_prefilter_black_user()
-    if not utils.is_black_user(self.uve.uid) then
+    local idx_blacklist = require('ad_idx.idx_black_list')
+    if not idx_blacklist.is_black_user(self.uve.uid) then
         return
     end
 end
@@ -238,31 +126,15 @@ end
 
 -- 应用过滤规则
 function IDX:apply_filter_rules()
-    local service = self.uve.service
-    if D.FILTER_MODULE_NAME[service] == nil then
-        return
-    end
-    local uve = self.uve
-    local res, rc = FILTER_MODULE_CLASSES[service].is_black_user(uve)
-    if res then
-        if next(self.products) then
-            for _,product in ipairs(self.products) do
-                self.stats.product[product].rc = rc
-            end
-        end
-        self.products = {}
-    end
+
 end
 
 -- 应用灰度策略
 function IDX:apply_gray()
 end
 
--- 大v黑名单或全局黑名单中访客标注
-function IDX:apply_big_v_strategy()
-    if IdxBlackList.is_default_black_or_big_v_user(self.uve.user.uid) then
-        self.is_black_or_big_v_uid = true  --标记当前访客
-    end
+function IDX:apply_strategy()
+
 end
 
 
@@ -272,9 +144,10 @@ function IDX:flow_control()
 
 end
 
+function IDX:prerequest_filter() end
 
 function IDX:prerequest_handle()
-    local profile = require('profile')
+    local profile = require('ad_idx.profile')
     -- 获取用户唯一标识
     self.user_identifier_info = profile.get_user_identifier_info(self.uid)
 
@@ -325,7 +198,7 @@ function IDX:init_module()
         module_dict[product] = m
     end
     self.module_dict = module_dict
-
+    self.module_dict['sfst'] = require('ad_idx.modules.sfst_module')
     return true
 end
 
@@ -335,18 +208,11 @@ function IDX:generate_requests()
     local products = {}
     for _,product in ipairs(self.products) do
         local m = self.module_dict[product]
-        local rc, request = m:generate_request()
+        local rc, request = m:generate_request(self.uve)
         if rc == true then
+
             table.insert(products, product)
             table.insert(self.capture_requests, request)
-            if self.is_debug then
-                ngx.say("########## Request " .. product)
-                if product == D.PRODUCTS.SMARTD then
-                    ngx.say(IUtils.json_encode(request[2].args))
-                else
-                    ngx.say(request[2].body)
-                end
-            end
         end
     end
     self.products = products
@@ -359,31 +225,30 @@ function IDX:capture_multi()
         return false
     end
     self.responses = { ngx.location.capture_multi(self.capture_requests) }
+
 end
 
 -- 解析各广告引擎的返回结果
 function IDX:parse_responses()
     for i,product in ipairs(self.products) do
         local m = self.module_dict[product]
-        self.stats.product[product].rc = self.responses[i].status
         m:parse_response(self.responses[i])
+        table.insert(self.target_ads,m.result_dict)
         if self.is_debug then
             ngx.say("########## Response " .. product)
             ngx.say(self.responses[i].body)
         end
 
         if self.responses[i].status ~= ngx.HTTP_OK then
-            ngx.log(ngx.ERR, string.format("capture %s fail: %s",
-                    product, IUtils.json_encode(self.responses[i])))
+            ngx.log(ngx.ERR, string.format("capture %s ",
+                    product))
         end
     end
 end
 
 -- 候选结果过滤
 function IDX:response_filter()
-    if not self.enable_ad_style then
-        return
-    end
+
 end
 
 -- 对候选进行广告主过滤
@@ -391,11 +256,7 @@ function IDX:candidates_filter_cust_id(candidates)
     if candidates == nil or next(candidates) == nil then
         return
     end
-    for _, cand in ipairs(candidates) do
-        if FM_1009.is_in_black_list(cand.cust_id) then
-            cand.inter.status = D.CAND_STATUS.CUST_FILTED
-        end
-    end
+
 end
 
 
@@ -403,117 +264,23 @@ end
 function IDX:prebid_get_cands(impid)
     local cands = {} -- [{},...]
 
-    for _,product in ipairs(self.products) do
-        local m = self.module_dict[product]
-        local candidates = m:get_candidates(impid) or {}
-        for _,cand in ipairs(candidates) do
-            table.insert(cands, cand)
-        end
-    end
-    --ngx.log(ngx.DEBUG, string.format("impid %s cands %s", impid, IUtils.json_encode(cands)))
-
     return cands
 end
 
 -- bid阶段获取impid对应的候选
 function IDX:bid_get_cands(impid)
-    local cands = {} -- [{},...]
 
-    for _,product in ipairs(self.products) do
-        local m = self.module_dict[product]
-        local candidates = m:get_bid_candidates(impid) or {}
-        for _,cand in ipairs(candidates) do
-            table.insert(cands, cand)
-        end
-    end
-    return cands
 end
 
 -- 获取托价队列
 --  托价队列：本次流量的所有候选中，竞价值小于winner竞价值的候选集合
 --  若无，则什么也不返回
 function IDX:get_leaves_with_winner(winner)
-    local leaves = {} -- [{},...]
-    for _,product in ipairs(self.products) do
-        local m = self.module_dict[product]
-        local product_cands = m:get_leaves_with_winner(winner) or {}
-        for _,cand in ipairs(product_cands) do
-            table.insert(leaves, cand)
-        end
-    end
-
-    if #leaves <=1 then
-        return leaves
-    end
-
-    local new_leaves = {}
-    local max = 0
-    local index = 0
-    for i,cand in ipairs(leaves) do
-        local value = cand.inter.bid_value
-        if value > max then
-            max = value
-            index = i
-        end
-    end
-    table.insert(new_leaves, leaves[index])
-
-    return new_leaves
 end
 
 -- 底价过滤&动态起拍价过滤
 function IDX:apply_floor_price(cand, cash_coef, product_coef, channel_coef)
 
-    -- WAX正文页场景动态起拍价下线 http://git.intra.weibo.com/idx/idx-core/issues/35
-    if self.uve.service == D.SERVICES.SINGLE_PAGE
-            and cand.inter.product == D.PRODUCTS.WAX then
-        return
-    end
-
-    -- 获取低价
-    -- UVE下发的单位是：元/千次曝光，IDX竞价值单位：毫/一次
-    local floor_prices = self.uve.strategy.floor_price or {}
-    local floor_price_key = D.PRODUCT_PRICE_KEYS[cand.inter.product]
-    local floor_price =  floor_prices[floor_price_key] or 0
-    floor_price = floor_price * 10  -- 转换为 毫/一次
-    cand.inter.floor_price = floor_price
-
-    -- 底价过滤
-    if cand.inter.bid_value <= cand.inter.floor_price then
-        cand.inter.status = D.CAND_STATUS.FLOOR_PRICE_FILTED
-        --ngx.log(ngx.DEBUG, "discard ", IUtils.json_encode(cand))
-        return
-    end
-
-    -- 只对WAX启用动态起拍价，且只对非PDB类型广告
-    if cand.inter.product ~= D.PRODUCTS.WAX then
-        return
-    end
-    if cand.inter_ext.bid_model.is_WAX_PDB == true then
-        return
-    end
-    -- WAX动态底价豁免
-    --  http://git.intra.weibo.com/ad/adx/wax_engine/delivery/wax_delivery/wikis/wax_%E5%8A%A8%E6%80%81%E5%BA%95%E4%BB%B7%E8%B1%81%E5%85%8D
-    if cand.inter_ext and cand.inter_ext.exempt_floor == true then
-        return
-    end
-    local d = {
-        cash_coef = cand.inter.cash_coef,
-        product_coef = cand.inter.product_coef,
-        channel_coef = cand.inter.channel_coef,
-        gender_code = self.uve.user.gender_code,
-        age_code = self.uve.user.age_code,
-        city_code = self.uve.ext.city_code,
-        os_code = SfstConf.get_os_code(self.uve.device)
-    }
-    local dlp_value = FM_1002.get_value(d)
-    --ngx.log(ngx.DEBUG, string.format("value %d dlp_value %d args: %s cand %s", cand.inter.bid_value, dlp_value, IUtils.json_encode(d), IUtils.json_encode(cand)))
-
-    if cand.inter.bid_value < dlp_value then
-        cand.inter.status = D.CAND_STATUS.FLOOR_PRICE_FILTED
-        --ngx.log(ngx.DEBUG, string.format("discard value %d dlp_value %d args: %s cand %s", cand.inter.bid_value, dlp_value, IUtils.json_encode(d), IUtils.json_encode(cand)))
-        return
-    end
 end
 
 
@@ -523,42 +290,6 @@ end
 --3. 计算所有候选竞价值并进行底价过滤
 --4. 广告主候选黑名单过滤
 function IDX:prebid_handler()
-    local strategy = self.uve.strategy
-    -- 获取所有产品的所有候选
-    local all_cands = {} -- array
-    for i,impid in ipairs(self.impids) do
-        local cands = self:prebid_get_cands(impid)
-        for _, cand in ipairs(cands) do
-            -- 设置各候选竞价权重
-            local bid_wt_dict = self.imp_bidding_weight_dict[tostring(cand.position)] or strategy.bidding_weight
-            cand.inter.bid_wt = bid_wt_dict[cand.cand_type] or 1 --默认权重为1, 理论上不会触发默认值设置
-            table.insert(all_cands, cand)
-        end
-    end
-
-    -- 计算竞价值&底价过滤
-    for _,cand in ipairs(all_cands) do
-        local ecpm = cand.ecpm
-        local cash_coef = cand.cash_coef
-        local product_coef = strategy.product[cand.inter.product]
-        local channel_coef = strategy.channel[cand.channel]
-
-        -- 竞价值计算
-        local value = ecpm * cash_coef * product_coef * channel_coef  -- Note: ctr=1
-        cand.inter.bid_value = value
-        cand.inter.product_coef = product_coef
-        cand.inter.channel_coef = channel_coef
-        cand.inter.cash_coef = cash_coef
-
-        self:apply_floor_price(cand)
-    end
-
-    -- videofeed场景，对候选进行广告主黑名单过滤
-    if self.uve.service == D.SERVICES.VIDEOFEED then
-        self:candidates_filter_cust_id(all_cands)
-    end
-
-
 end
 
 
@@ -569,21 +300,19 @@ function IDX:bid()
     self:prebid_handler()
     local BidModel = require("ad_idx.idx_bid_model")
     local winners = {}
-    for i,impid in ipairs(self.impids) do
-        local cands = self:bid_get_cands(impid)
-        if next(cands) then
-            local params = {
-                service = self.uve.service,
-                strategy = self.uve.strategy,
-                imp = self.impids[i],
-                position_index = i,
-                cands = cands,
-                model_version = "v3"
-            }
-            local model = BidModel:new(params)
-            winners = model:bid()
-        end
+    local cands = self.target_ads
+
+    if next(cands) then
+        local params = {
+            service = self.uve.service,
+            strategy = self.uve.strategy,
+            cands = cands,
+            model_version = "v1"
+        }
+        local model = BidModel:new(params)
+        winners = model:bid()
     end
+
 
     -- 尾部投放,只有存在于有未填充广告的广告位时
     self:tail_push(winners)
@@ -594,11 +323,6 @@ end
 
 -- 删除有广告胜出的广告位
 function IDX:delete_impid(impid)
-    for i, v in ipairs(self.miss_impids) do
-        if v.impid == impid then
-            table.remove(self.miss_impids, i)
-        end
-    end
 end
 
 -- 尾部投放，在存在有未填充广告的广告位时，将SmartD的未曝光候选填入
@@ -608,34 +332,15 @@ end
 
 -- 在相应的产品模块中，添加在尾部投放中填充的候选
 function IDX:push_tail_wins(cand)
-    local product = cand.inter.product
-    if D.TAIL_PUSH_MODULES[product] then
-        local m = self.module_dict[product]
-        if m then
-            if m["reset_mark"] then
-                m:reset_mark(cand)
-            end
-            m:push_wins(cand)
-        end
-    end
 end
 
 -- 竞价后置逻辑
 function IDX:postbid()
-    if not next(self.winners) then
-        return
-    end
+
 end
 
 function IDX:generate_response_part_ext()
     local ext = {}
-    local timestamp_us = {}
-    timestamp_us["start"] = string.format("%d", self.stats.stime)
-    timestamp_us["end"] = string.format("%d", self.stats.etime)
-    ext["timestamp_us"] = timestamp_us
-    if self.uve.ext ~= nil then
-        ext["uve_timestamp"] = self.uve.ext.uve_timestamp or 0
-    end
     return ext
 end
 
@@ -712,7 +417,6 @@ end
 -- param uve 解析后的uve请求体结构
 function IDX:run(req_body, uve)
     -- NOTE: 不可改变以下函数的调用顺序
-
     -- 初始化
     self:init(req_body, uve)
 
@@ -775,6 +479,7 @@ function IDX:run(req_body, uve)
 
     -- 收官[>\/<]
     self:finalize_handler()
+
 end
 
 return IDX

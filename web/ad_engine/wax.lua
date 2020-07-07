@@ -23,11 +23,11 @@ while ad_count >= 1 do
     table.insert(ads,
         {
             recommend="广告",
-         id= "sfst_ad_id_"..tostring(ad_count),
+         id= "wax_ad_id_"..tostring(ad_count),
          service=service_name,
          adtype= 8, position=ad_count,
          type= "ad",
-         product="sfst",
+         product="wax",
          bid_price= tonumber(math.random()*10), ad_version='1'
 
     })

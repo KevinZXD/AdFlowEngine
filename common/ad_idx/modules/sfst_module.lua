@@ -1,7 +1,7 @@
 local M = { verison = "0.0.1" }
 
-local utils = require('utils')
-local itypes = require('itypes')
+local utils = require('lib.utils')
+local itypes = require('lib.itypes')
 local cjson = require('cjson')
 function M:new(o)
     o = o or {}
@@ -24,9 +24,9 @@ function M:generate_request_body()
 end
 
 function M:generate_request()
-    if not itypes.is_non_empty_string(self.uid) then
-        return false, {}
-    end
+    --if not itypes.is_non_empty_string(self.uid) then
+    --    return false, {}
+    --end
      
     local rc = self:generate_request_body()
     if rc == false then
@@ -37,8 +37,7 @@ function M:generate_request()
     local body_str = cjson.encode(body)
 
 
-    local api = string.format("/ad/%s",
-                              self.product_name)
+    local api = "/ad/sfst"
     local request = {
         api,
         { 

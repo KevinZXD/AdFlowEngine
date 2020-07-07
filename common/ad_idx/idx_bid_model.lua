@@ -9,12 +9,13 @@
 --  Note: 本模块及其子模块[能且仅能]修改cands[i].inter内的数据，对其他数据结构不得做修改。
 
 
-local DefaultBidModelV3 = require("ad_idx.idx_bid_module.bid_module")
-
+local DefaultBidModelV2 = require("ad_idx.idx_bid_module.bid_module")
+local DefaultBidModelV1 = require("ad_idx.idx_bid_module.bid_module_v1")
 local _M = { _VERSION = "0.0.1"}
 
 local BID_MODELS = {
-    v3 = DefaultBidModelV3
+    v2 = DefaultBidModelV2,
+    V1 = DefaultBidModelV1
 }
 
 function _M:new(o)
@@ -42,7 +43,7 @@ function _M:bid()
     -- 若只有一个候选，则不需要竞价，更新竞价状态后直接返回，提升效率
     if #self.cands == 1 then
         local cand = self.cands[1]
-        cand.inter.status = 'success'
+        cand.status = 'success'
         return cand
     end
 
@@ -55,14 +56,6 @@ function _M:bid()
         return nil
     end
 
-    -- 更新竞价状态
-    for _,cand in ipairs(self.cands) do
-        if win.inter.candidate_id == cand.inter.candidate_id then
-            cand.inter.status = 'bid_success'
-        else
-            cand.inter.status = 'bid_fail'
-        end
-    end
 
     return win
 end
