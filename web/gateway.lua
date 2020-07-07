@@ -5,6 +5,6 @@
 ---
 local core_t = require('ad_idx.core')
 local core = core_t:new()
-local req_body={is_debug=false}
-local uve = {uid='u0001',from='android',ad_counts=10,strategy_products={'sfst'},ad_show=true}
+local req_body={is_debug=true}
+local uve = {uid='u0001',from='android',ad_counts=10,strategy_products={'sfst','wax'},ad_show=false}
 core:run(req_body,uve)

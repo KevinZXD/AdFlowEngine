@@ -16,13 +16,11 @@ end
 
 
 function M:generate_request_body(params)
-
     self.request_body = utils.deepcopy(params)
     return true
 end
 
 function M:generate_request(params)
-
     local rc = self:generate_request_body(params)
     if rc == false then
         return false, {}
