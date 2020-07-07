@@ -346,19 +346,11 @@ end
 -- 生成response，并回复客户端
 function IDX:response_uve()
     local resp_data = {}
-    resp_data.id = self.uve.id or ""
-
-    -- 以position升序排列竞价胜出的广告
-    table.sort(self.winners, function (a, b)
-        return a.position < b.position
-    end)
-
+    resp_data.id = self.uve.uid or ""
     resp_data["data"] = {}
     for _,winner in ipairs(self.winners) do
         local resp_data_ = {}
-
         resp_data_["service"] = winner["service"]
-
         resp_data_["position"] = winner["position"]
         resp_data_["id"] = winner["id"]
         resp_data_["bid_price"] = winner["bid_price"]
@@ -367,7 +359,6 @@ function IDX:response_uve()
         resp_data_["recommend"] = winner["recommend"]
         table.insert(resp_data["data"],resp_data_)
     end
-    local cjson = require('cjson')
     ngx.say(cjson.encode(resp_data))
 end
 
