@@ -169,7 +169,6 @@ function getByKeyNew(key, poolType)
 
 end
 
---通过FlowManager获取
 function get_idc()
     local t_idc = require('lib.idc')
     local idc = t_idc:new()

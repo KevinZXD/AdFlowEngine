@@ -4,7 +4,7 @@
 --- DateTime: 2020/7/6 5:38 PM
 ---
 local _M = {_VERSION = "0.0.1"}
--- 根据uid用户唯一标示从平台获取用户的基本画像
+-- 根据uid用户唯一标示从平台获取用户的基本画像,一版情况用户画像都存储在redis里面
 function _M.get_user_identifier_info(self,uid)
     return {age='年龄',area='所处区域',device='设备',sex='性别',hobby='爱好', tag='标签'}
 

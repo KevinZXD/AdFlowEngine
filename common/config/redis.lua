@@ -6,5 +6,5 @@
 
 module(..., package.seeall)
 -- nginx 配置的全局变量
-IDC = os.getenv('ENV_DATACENTER') -- 暂停使用，同时需保留
-bx = {}
+-- 暂停使用，同时需保留
+redis_pool = {}
