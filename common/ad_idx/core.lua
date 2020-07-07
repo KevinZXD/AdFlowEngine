@@ -24,7 +24,7 @@ function IDX:new(o)
     return o
 end
 local PRODUCT_MODULE_CLASSES = {}
-local PRODUCT_MODNAMES = {sfst='sfst_module'}
+local PRODUCT_MODNAMES = {sfst='sfst_module',wax='wax_module'}
 for product_name,module_name in pairs(PRODUCT_MODNAMES) do
     PRODUCT_MODULE_CLASSES[product_name] = require(string.format("ad_idx.modules.%s", module_name))
 end
@@ -39,8 +39,8 @@ function IDX:init(req_body, uve)
     self.req_body = req_body
     self.post_data = {} -- 请求广告引擎需要的POST数据
     -- 本次流量要出哪些产品线的广告 {"A", "B",...}
-    self.strategy_products = {'sfst'} -- 业务策略中指出的且IDX已支持的产品线, 数组
-    self.products ={'sfst'} -- 经过流量控制等过滤后，最终决定访问哪些产品线, 数组
+    self.strategy_products = uve.strategy_products -- 业务策略中指出的且IDX已支持的产品线, 数组
+    self.products =uve.strategy_products -- 经过流量控制等过滤后，最终决定访问哪些产品线, 数组
     self.module_dict = {} -- 对应各个引擎模块 {"product":module, ...}
     self.capture_requests = {} -- capture的请求串，数组
     self.responses = {} -- 并行请求各业务线的返回结果，数组

@@ -28,6 +28,9 @@ end
 -- 获取竞价模型
 -- 依据请求参数决定使用何种竞价模型
 function _M:match_model()
+    if self.model_version == nil then
+        return DefaultBidModelV1
+    end
     local model = BID_MODELS[self.model_version]
     return model
 end

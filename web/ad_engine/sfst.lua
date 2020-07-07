@@ -9,7 +9,9 @@
 local cjson = require('cjson')
 ngx.req.read_body()
 local post_params = ngx.req.get_post_args()
-
+if post_params == nil then
+    post_params = ngx.req.get_body_data()
+end
 local ad_count = post_params.ad_counts
 if ad_count == nil then
     ad_count = 3
