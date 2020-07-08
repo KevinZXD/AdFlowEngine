@@ -19,9 +19,21 @@ function run(self)
     local post_params = ngx.req.get_body_data()
     post_params = cjson.decode(post_params)
     local post_body = post_params.post_body
-    post_body.strategy_products={'sfst','sfst'}
+    post_body.strategy_products={'sfst'}
+    if post_body.ad_counts then
+        ads_assign( post_body.ad_counts,post_body)
+    end
+
     local core_t = require('ad_idx.core')
     local core = core_t:new()
     local req_body={is_debug=false}
     core:run(req_body,post_body)
+end
+
+function ads_assign(ads_count,post_body)
+    if tonumber(ads_count) < 5  then
+        post_body.strategy_products={'sfst'}
+    else
+        post_body.strategy_products={'wax'}
+    end
 end

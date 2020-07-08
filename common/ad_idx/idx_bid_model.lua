@@ -12,7 +12,7 @@
 local DefaultBidModelV3 = require("ad_idx.idx_bid_module.bid_module_v3")
 local DefaultBidModelV1 = require("ad_idx.idx_bid_module.bid_module_v1")
 local _M = { _VERSION = "0.0.1"}
-
+local cjson = require('cjson')
 local BID_MODELS = {
     v3 = DefaultBidModelV3,
     v1 = DefaultBidModelV1
@@ -45,10 +45,6 @@ function _M:bid()
 
     -- 若只有一个候选，则不需要竞价，更新竞价状态后直接返回，提升效率
     local cand = self.cands[1]
-    if #self.cands == 1 then
-        cand.status = 'success'
-        return cand
-    end
     if cand[1] and cand[1].bid_version then
         self.model_version = cand[1].bid_version
     end

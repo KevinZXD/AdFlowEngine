@@ -422,12 +422,6 @@ function whiteList(uid)
     return false
 end
 
-function set_scheme(url, params)
-    local t_scheme = require('service.scheme')
-    t_scheme = t_scheme:new()
-    local url = t_scheme:handle(url, {})
-    return url
-end
 
 -- 去除字符串两边的空格
 function trim(str)
