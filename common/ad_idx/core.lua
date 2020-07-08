@@ -21,8 +21,8 @@ end
 
 -- 初始化
 -- 所有可能用到的变量，在此声明
--- param req_body为uve请求体body字符串
--- param uve 解析后的uve请求体结构
+-- param req_body为ad_uve请求体body字符串
+-- param uve 解析后的ad_uve请求体结构
 function IDX:init(req_body, uve)
     self.uve=uve
     self.req_body = req_body
@@ -49,28 +49,6 @@ function IDX:init_request()
 
 end
 
--- 获取单次请求的竞价广告位首位
--- 备注：仅在主信息流和分组流区分竞价位首位
--- 例如某次下发的广告位为[1,3,10,15], 竞价广告位首位为3
-function IDX:get_req_first_bid_pos()
-
-end
-
--- 获取单次请求的竞价广告位末位
--- 备注: 仅在主信息流区分竞价位末位
--- 例如某次下发的广告位为[1,3,10,15], 竞价广告位末位为15
-function IDX:get_req_last_bid_pos()
-
-end
-
--- 特殊广告位可出候选类型过滤
--- @param origin_bidding_weight 初始的权重列表
--- @param cand_types 允许填充的候选类别列表
--- @param is_wl 过滤模式, true代表白名单过滤, false代表黑名单过滤
--- @return 过滤后的结果
-function IDX:filter_imp_cand_type(origin_bidding_weight, cand_types, is_wl)
-
-end
 
 -- 将排序后的竞价权重列表转为字典
 -- @param bwt_list 竞价权重列表
@@ -149,9 +127,6 @@ function IDX:apply_flow_strategy()
 
 end
 
-function IDX:get_imps_with_product(product)
-
-end
 
 -- 根据产品线下发实验策略
 -- @param product 业务规范中定义的产品线英文名称
@@ -171,13 +146,6 @@ end
 function IDX:experiment_filter()
 
 end
-
--- 特殊广告位请求前过滤
--- 目标: 当特殊广告位不包含某产品线下任何候选类型, 则不对该产品线下发该广告位
-function IDX:filter_product_imps(product, imps)
-
-end
-
 
 -- 初始化广告引擎模块
 -- @return true 成功，false 失败
@@ -263,17 +231,6 @@ function IDX:candidates_filter_cust_id(candidates)
 end
 
 
--- prebid阶段获取impid对应的候选
-function IDX:prebid_get_cands(impid)
-    local cands = {} -- [{},...]
-
-    return cands
-end
-
--- bid阶段获取impid对应的候选
-function IDX:bid_get_cands(impid)
-
-end
 
 -- 获取托价队列
 --  托价队列：本次流量的所有候选中，竞价值小于winner竞价值的候选集合
@@ -326,9 +283,6 @@ function IDX:bid()
     --ngx.log(ngx.DEBUG, "wins ", IUtils.json_encode(self.winners))
 end
 
--- 删除有广告胜出的广告位
-function IDX:delete_impid(impid)
-end
 
 -- 尾部投放，在存在有未填充广告的广告位时，将SmartD的未曝光候选填入
 function IDX:tail_push(winners)
