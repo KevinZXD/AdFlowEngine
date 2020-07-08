@@ -11,11 +11,9 @@ local _M = { _VERSION = "0.0.1"}
 
 _M.name = "idx_bid_model_v2"
 
-
-
 -- 计算最优广告
 -- @parma table cands
--- @return table 返回候选集中竞价最优的广告，无候选则返回nil
+-- @return table 返回候选集中竞价最优的广告,有个数限制，无候选则返回nil
 function _M.bid(cands,ad_counts)
     if type(cands)~='table' or next(cands) == nil then
         return nil
@@ -24,7 +22,20 @@ function _M.bid(cands,ad_counts)
         return bid_ad1.bid_price > bid_ad2.bid_price
     end
     table.sort(cands,bid_price_comp)
-    return cands
+    local filter_ads = {}
+    if ad_counts then
+        for _, ad in pairs(cands) do
+            table.insert(filter_ads, ad)
+            ad_counts=ad_counts-1
+            if ad_counts <=0 then
+                break
+            end
+        end
+        table.sort(filter_ads,bid_price_comp)
+        return filter_ads
     end
+    return cands
+end
 
 return _M
+

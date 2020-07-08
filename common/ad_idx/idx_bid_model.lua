@@ -10,14 +10,14 @@
 
 
 local DefaultBidModelV3 = require("ad_idx.idx_bid_module.bid_module_v3")
-local DefaultBidModelV1 = require("ad_idx.idx_bid_module.bid_module_v1")
 local DefaultBidModelV2 = require("ad_idx.idx_bid_module.bid_module_v2")
+local DefaultBidModelV1 = require("ad_idx.idx_bid_module.bid_module_v1")
 local _M = { _VERSION = "0.0.1"}
 local cjson = require('cjson')
 local BID_MODELS = {
     v3 = DefaultBidModelV3,
+    v2 = DefaultBidModelV2,
     v1 = DefaultBidModelV1,
-    v2 = DefaultBidModelV2
 }
 
 function _M:new(o)
