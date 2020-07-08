@@ -31,7 +31,7 @@ function run(self)
 end
 
 function ads_assign(ads_count,post_body)
-    if tonumber(ads_count) < 5  then
+    if tonumber(ads_count) < 5  then -- 增加配置
         post_body.strategy_products={'sfst'}
     else
         post_body.strategy_products={'wax'}

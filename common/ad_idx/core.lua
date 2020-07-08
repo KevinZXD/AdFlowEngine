@@ -5,7 +5,6 @@
 ---
 
 local IDX = {}
-local utils = require('lib.utils')
 local cjson = require('cjson')
 function IDX:new(o)
     o = o or {}
@@ -14,7 +13,7 @@ function IDX:new(o)
     return o
 end
 local PRODUCT_MODULE_CLASSES = {}
-local PRODUCT_MODNAMES = {sfst='sfst_ad',wax='wax_ad'}
+local PRODUCT_MODNAMES = {sfst='ad_sfst',wax='ad_wax'}
 for product_name,module_name in pairs(PRODUCT_MODNAMES) do
     PRODUCT_MODULE_CLASSES[product_name] = require(string.format("ad_idx.modules.%s", module_name))
 end
@@ -198,7 +197,7 @@ function IDX:generate_requests()
     -- 若某product生成request失败，则不请求该product的引擎，它也不参与竞价。
     local products = {}
     for _,product in pairs(self.products) do
-        local m = self.module_dict[product]
+        local m = require(string.format("ad_idx.modules.ad_%s", product))
         local rc, request = m:generate_request(self.uve)
         if self.is_debug then
             ngx.say('reload module  '.. m.product_name)
