@@ -11,11 +11,17 @@ function new(self, core)
 end
 
 function render(self)
+    local ads= {}
     local modules = self.core.scheduler.modules
     if modules then
         for _, mo in ipairs(modules) do
             if mo.data then
-                for _, _data in ipairs(mo.data.data) do
+                if mo.data.data then
+                    ads = mo.data.data
+                else
+                    ads = mo.data
+                end
+                for _, _data in ipairs(ads) do
                     _data.ad_render= {'广告物料填充'}
                 end
 

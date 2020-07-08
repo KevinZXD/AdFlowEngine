@@ -12,7 +12,6 @@
 -----------------------------------------------------------------------------
 
 module(..., package.seeall)
-
 -----------------------------------------------------------------------------
 -- 从传参里的各项数据中获取当前请求的产品线信息，以及每个产品线请求所需携带的参数
 -- Input
@@ -22,7 +21,20 @@ module(..., package.seeall)
 -- @return ex_product 存在的产品线
 -----------------------------------------------------------------------------
 function get_product(core)
-    return {}, { ad = 'ad', account = 'account' }
+    local ad_product={ad = 'ad'}
+    local get_body=core.request.get_args
+    local params = {}
+    if get_body then
+        params = get_body
+    end
+    if params.business == '01' then
+        ad_product = {ad='ad'}
+    elseif params.business == '02' then
+        ad_product = {account = 'account'}
+    else
+        ad_product = {brand = 'brand'}
+    end
+    return {}, ad_product
 end
 
 

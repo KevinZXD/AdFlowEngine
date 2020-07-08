@@ -22,6 +22,7 @@ mainfeed = {
     modules = {
         ['account'] = 'ads.sm.account',
         ['ad'] = 'ads.sm.ad',
+        ['brand'] = 'ads.sm.brand',
     },
     context = '',
     init = '',
