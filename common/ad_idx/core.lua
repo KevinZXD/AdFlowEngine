@@ -311,7 +311,8 @@ function IDX:bid()
             strategy = self.uve.strategy,
             cands = cands,
             model_version = "v1",
-            ad_counts = self.uve.ad_counts
+            ad_counts = self.uve.ad_counts,
+            products=self.products
         }
         local model = BidModel:new(params)
         winners = model:bid()

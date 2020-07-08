@@ -11,11 +11,13 @@
 
 local DefaultBidModelV3 = require("ad_idx.idx_bid_module.bid_module_v3")
 local DefaultBidModelV1 = require("ad_idx.idx_bid_module.bid_module_v1")
+local DefaultBidModelV2 = require("ad_idx.idx_bid_module.bid_module_v2")
 local _M = { _VERSION = "0.0.1"}
 local cjson = require('cjson')
 local BID_MODELS = {
     v3 = DefaultBidModelV3,
-    v1 = DefaultBidModelV1
+    v1 = DefaultBidModelV1,
+    v2 = DefaultBidModelV2
 }
 
 function _M:new(o)
@@ -45,8 +47,10 @@ function _M:bid()
 
     -- 若只有一个候选，则不需要竞价，更新竞价状态后直接返回，提升效率
     local cand = self.cands[1]
-    if cand[1] and cand[1].bid_version then
+    if cand[1] and cand[1].bid_version and #self.products == 1 then
         self.model_version = cand[1].bid_version
+    elseif cand[1] and cand[1].bid_version and #self.products > 1 then -- 多产品竞价 不限制个数 都有多少全返回
+        self.model_version = 'v2'
     end
     --  获取竞价模型
     local model = self:match_model()

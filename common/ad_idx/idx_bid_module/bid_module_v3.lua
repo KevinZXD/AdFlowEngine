@@ -23,7 +23,7 @@
 
 local _M = { _VERSION = "0.0.1"}
 local cjson = require('cjson')
-_M.name = "idx_bid_default_model"
+_M.name = "idx_bid_model_v3"
 
 -- 依据竞价权重竞价
 -- @param cands 参与竞价候选列表
