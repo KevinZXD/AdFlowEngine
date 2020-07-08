@@ -75,8 +75,8 @@ function new(self)
     status, post_params = pcall(cjson.decode, post_params)
 
     return setmetatable({
-        get_args = ngx.req.get_uri_args(),
-        post_args = post_params,
+        get_args = ngx.req.get_uri_args(), -- table
+        post_args = post_params,  -- table
         start_time = _start_time,
         start_time_s = math.floor(_start_time),
         start_time_str = os.date('%Y-%m-%d %H:%M:%S', _start_time),

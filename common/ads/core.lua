@@ -71,7 +71,6 @@ function run(self)
     self.resp_str = resp_str
     ngx.print(resp_str) -- 返回给客户端请求处理结果数据
     ngx.eof()
-    --self:finish()
 end
 
 
@@ -83,7 +82,14 @@ end
 -- @return
 ----------------------------------------------------------------------------
 function whiteList(self)
-
+    local utils = require('lib.utils')
+    local uid =self.request.get_args.uid
+    if uid then
+        if utils.whiteList(uid) then
+            ngx.print('定投的内容')
+            ngx.eof()
+        end
+    end
 
 end
 
