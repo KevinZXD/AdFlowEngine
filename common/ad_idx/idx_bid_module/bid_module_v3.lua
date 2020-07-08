@@ -22,7 +22,7 @@
 
 
 local _M = { _VERSION = "0.0.1"}
-
+local cjson = require('cjson')
 _M.name = "idx_bid_default_model"
 
 -- 依据竞价权重竞价
@@ -40,10 +40,10 @@ function _bid_by_weight(cands)
     local max_wt = 0
     local max_wt_cands = {}
     for i, cand in ipairs(cands) do
-        if cand.inter.bid_wt > max_wt then
-            max_wt = cand.inter.bid_wt
+        if cand.value.bid_wt > max_wt then
+            max_wt = cand.value.bid_wt
             max_wt_cands = {cand}
-        elseif cand.inter.bid_wt == max_wt then
+        elseif cand.value.bid_wt == max_wt then
             table.insert(max_wt_cands, cand)
         end
     end
@@ -66,10 +66,10 @@ function _bid_by_score(cands)
     local max_score = 0
     local max_score_cands = {}
     for i, cand in ipairs(cands) do
-        if cand.inter.bid_value > max_score then
-            max_score = cand.inter.bid_value
+        if cand.value.bid_value > max_score then
+            max_score = cand.value.bid_value
             max_score_cands = {cand}
-        elseif cand.inter.bid_value == max_score then
+        elseif cand.value.bid_value == max_score then
             table.insert(max_score_cands, cand)
         end
     end
@@ -80,7 +80,32 @@ end
 -- 计算最优广告
 -- @parma table cands
 -- @return table 返回候选集中竞价最优的广告，无候选则返回nil
-function _M.bid(cands)
+function _M.bid(cands,ad_counts)
+    local utils = require('lib.utils')
+    local tar_ads = utils.deepcopy(cands)
+    ngx.log(ngx.ERR,cjson.encode(tar_ads))
+    local target_ads = {}
+    ad_counts = tonumber(ad_counts)
+    while ad_counts and ad_counts>=1
+         do
+            local ad = bid_only_one(tar_ads)
+            local copy = utils.deepcopy(ad)
+            table.insert(target_ads,copy)
+            local index= find_index(tar_ads,ad)
+            table.remove(tar_ads,index)
+            ad_counts=ad_counts-1
+        end
+    return target_ads
+
+end
+function find_index(cands,ad)
+    for index,value in pairs(cands) do
+        if  value.id == ad.id then
+            return index
+        end
+    end
+end
+function bid_only_one(cands)
     if next(cands) == nil then
         return nil
     end

@@ -8,12 +8,13 @@
 
 local cjson = require('cjson')
 ngx.req.read_body()
-local post_params = ngx.req.get_post_args()
+local post_body = ngx.req.get_body_data()
+local post_params = cjson.decode(post_body)
 local ad_count = post_params.ad_counts
 if ad_count == nil then
     ad_count = 3
 else
-    ad_count = tonumber(ad_count)
+    ad_count = tonumber(ad_count) *2
 end
 local service_name=post_params.service_name
 local ads = {}
@@ -27,8 +28,14 @@ while ad_count >= 1 do
          adtype= 8, position=ad_count,
          type= "ad",
          product="sfst",
-         bid_price= tonumber(math.random()*10), ad_version='1',
-            monitor_url="第三方监控链接"
+         bid_price= tonumber(math.random()*10), ad_version='1', bid_version='v3',
+            monitor_url="第三方监控链接",
+            value= {
+                bid_value=math.random(),
+                bid_wt = math.random(),
+
+            },
+            channel='sfst'
 
     })
 end

@@ -19,7 +19,7 @@ function run(self)
     local post_params = ngx.req.get_body_data()
     post_params = cjson.decode(post_params)
     local post_body = post_params.post_body
-    post_body.strategy_products={'sfst','wax'}
+    post_body.strategy_products={'sfst','sfst'}
     local core_t = require('ad_idx.core')
     local core = core_t:new()
     local req_body={is_debug=false}

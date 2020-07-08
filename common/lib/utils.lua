@@ -403,12 +403,6 @@ function in_table(val, t)
     return false
 end
 
-function is_beixian()
-    local t_idc = require('lib.idc')
-    local idc = t_idc:new()
-    idc = idc:get_idc()
-    return idc == 'bx'
-end
 
 function is_test()
     local t_idc = require('lib.idc')
@@ -461,7 +455,19 @@ function deepcopy(object)
     return _copy(object)
 end
 
-
+function clone(object, deep)
+    if object == nil then
+        return object
+    end
+    local copy = {}
+    for k, v in pairs(object) do
+        if deep and type(v) == "table" then
+            v = clone(v, deep)
+        end
+        copy[k] = v
+    end
+    return setmetatable(copy, getmetatable(object))
+end
 
 
 

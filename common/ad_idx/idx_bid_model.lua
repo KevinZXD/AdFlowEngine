@@ -44,16 +44,25 @@ function _M:bid()
     end
 
     -- 若只有一个候选，则不需要竞价，更新竞价状态后直接返回，提升效率
+    local cand = self.cands[1]
     if #self.cands == 1 then
-        local cand = self.cands[1]
         cand.status = 'success'
         return cand
     end
-
+    if cand[1] and cand[1].bid_version then
+        self.model_version = cand[1].bid_version
+    end
     --  获取竞价模型
     local model = self:match_model()
+    local all_ads = {}
+    for _,item in pairs(self.cands) do
+        for _, ad in pairs(item) do
+            table.insert(all_ads,ad)
+        end
+    end
+
     --  竞价计算
-    local win = model.bid(self.cands)
+    local win = model.bid(all_ads, self.ad_counts)
     if win == nil then
         ngx.log(ngx.ERR, string.format("%s bid failed", model.name))
         return nil
