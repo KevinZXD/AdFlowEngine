@@ -61,6 +61,7 @@ function get_req_params(self)
     local body = {}
     local cjson = require('cjson')
     body.post_body = self.core.get_url
+    body.post_body.ab_test = {} -- 获取ab实验的相关参数
     local _, json_body = pcall(cjson.encode, body)
     return self.http_method, self.http_uri, json_body
 end
