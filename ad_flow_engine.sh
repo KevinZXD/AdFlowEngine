@@ -2,7 +2,7 @@
 
 prefix=$(readlink -m $(dirname $0));
 echo $prefix
-ngx_conf="$prefix/conf/openresty_web.conf";
+ngx_conf="$prefix/conf/ad_flow_engine.conf";
 echo $ngx_conf
 # nginx 命令所在的位置
 ngx="nginx";
