@@ -22,7 +22,7 @@ function render(self)
                     ads = mo.data
                 end
                 for _, _data in ipairs(ads) do
-                    _data.ad_render= {'广告物料填充'}
+                    _data.ad_render= {_data.id..'的广告物料填充'}
                 end
 
             end

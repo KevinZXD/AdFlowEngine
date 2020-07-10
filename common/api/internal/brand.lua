@@ -22,17 +22,31 @@ function run(self)
         ad_counts = 3
     end
     local ads = {}
-    while ad_counts >= 1 do
+    local redis = require('service.redis')
+    local resp, _ = redis.getAllByKeyNew('ad_online_brand', 'remote')
+
+    local online_brand = {}
+    for k, _ in pairs(resp) do
+        if k % 2 ~= 0 then
+            online_brand[resp[k]] = cjson.decode(resp[k + 1])
+        end
+
+    end
+    for brand, brand_tb in pairs(online_brand) do
+
         table.insert(ads, {
             adtype = 1,
-            id = "brand_ad_id_" .. tostring(ad_counts),
-            product = "brand",
-            ad_version = "1",
-            recommend = "品牌广告",
+            id = brand,
+            product = brand_tb.product,
+            ad_version = brand_tb.version,
+            recommend = brand_tb.name,
             type = "brand",
-            monitor_url = "第三方监控链接"
+            monitor_url = brand_tb.monitor_url
         })
         ad_counts = ad_counts - 1
+        if ad_counts <= 0 then
+            break
+        end
     end
     ngx.print(cjson.encode(ads))
 

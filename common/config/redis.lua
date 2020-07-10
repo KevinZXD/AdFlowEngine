@@ -7,6 +7,7 @@
 module(..., package.seeall)
 -- nginx 配置的全局变量
 -- 暂停使用，同时需保留
+
 redis_pool= {
     ['local'] = {
         { ['host'] = '127.0.0.1', ['port'] = 6379 },

@@ -173,6 +173,19 @@ function getByKeyNew(key, poolType)
 
 end
 
+function getAllByKeyNew(key, poolType)
+    local auth
+    if poolType == 'remote' then
+        auth=true
+    end
+    local conf = get_conf(poolType)
+    local conn = redis_t.conn(conf.host, conf.port,auth)
+    local resdata, err = conn:hgetall(key)
+    redis_t.close(conn)
+    return resdata, err
+
+end
+
 function get_idc()
     local t_idc = require('lib.idc')
     local idc = t_idc:new()

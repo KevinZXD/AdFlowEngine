@@ -9,7 +9,12 @@
 --local uve = {uid='10001',from='android',ad_counts=10,strategy_products={'sfst','wax'},ad_show=true}
 --core:run(req_body,uve)
 local redis = require('service.redis')
-local resp=redis.getByKey('global_blacklist','local')
+local resp,err=redis.getAllByKeyNew('ad_online_brand','remote')
+
 local cjson =require('cjson')
-resp=cjson.decode(resp)
-ngx.print(type(resp))
+for k, v in pairs(resp) do
+    if k%2 == 0 then
+        ngx.print(type(cjson.decode(v)))
+    end
+
+end
