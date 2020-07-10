@@ -38,7 +38,7 @@ function IDX:init(req_body, uve)
     self.is_debug = req_body.is_debug
 end
 
--- 检查Sfst的请求是否有效
+
 -- @return 有效返回ture，否则返回false
 function IDX:parse_sfst_request()
     return true
@@ -64,14 +64,14 @@ function IDX:assign_imp_bidding_weight()
     -- 其他场景无特殊竞价权重要求
 end
 
--- 检查uve策略中指定的竞价权重是否合法
--- @param bidding_weight UVE策略中指定的竞价权重配置
+-- 检查策略中指定的竞价权重是否合法
+-- @param bidding_weight 策略中指定的竞价权重配置
 -- @return 配置有效返回true, 否则返回false
 function IDX:check_strategy_bidding_wt()
     return true
 end
 
--- 检查uve的请求数据是否合法
+-- 检查的请求数据是否合法
 -- @return 有效返回true，否则返回false
 function IDX:parse_request()
     return true
@@ -82,6 +82,8 @@ function IDX:apply_prefilter_black_user()
     local idx_blacklist = require('ad_idx.idx_black_list')
     if not idx_blacklist.is_black_user(self.uve.uid) then
         return
+    else
+        self:response_uve()
     end
 end
 
@@ -100,14 +102,25 @@ function IDX:apply_gray()
 end
 
 function IDX:apply_strategy()
-
-end
+    local strategy = require('ad_idx.strategy')
+    self.strategy = strategy:get_stratety_info(self.uve.business)
+    if self.is_debug then
+        ngx.say(cjson.encode(self.strategy))
+    end
+    if self.strategy then
+    self.uve.strategy=self.strategy
+    end
+    end
 
 
 
 -- 流量控制：流量百分比、降级等
 function IDX:flow_control()
-
+    local redis = require('service.redis')
+    local flow_control = redis.getByKey('flow_control', 'local')
+    if flow_control then
+        self:response_uve()
+    end
 end
 
 function IDX:prerequest_filter() end
@@ -340,10 +353,10 @@ end
 --  2. 请求那些在结束时，需要访问网络的request，
 --     这里只发起请求，不会处理响应，也不关心成功失败
 --  3. 这里均用 self.strategy_products 来遍历module
---     有些业务不获取广告数据，但需IDX记录某些信息，如
+--     有些业务不获取广告数据，但需记录某些信息，如
 function IDX:finalize_handler()
-    -- 先返回数据给UVE，后做其他处理
-    -- NOTE: 返回给UVE的耗时没有包含写频次，记录曝光日志的时间
+    -- 先返回数据给，后做其他处理
+    -- NOTE: 返回给的耗时没有包含写频次，记录曝光日志的时间
     self:response_uve()
 
     -- 记录各产品线曝光日志
@@ -351,8 +364,8 @@ function IDX:finalize_handler()
 end
 
 -- 请求处理主流程
--- param req_body为uve请求体body字符串
--- param uve 解析后的uve请求体结构
+-- param req_body为请求体body字符串
+-- param  解析后的请求体结构
 function IDX:run(req_body, uve)
     -- NOTE: 不可改变以下函数的调用顺序
     -- 初始化
