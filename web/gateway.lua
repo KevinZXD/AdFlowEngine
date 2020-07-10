@@ -3,8 +3,13 @@
 --- Created by xudong12.
 --- DateTime: 2020/2/26 1:25 PM
 ---
-local core_t = require('ad_idx.core')
-local core = core_t:new()
-local req_body={is_debug=false}
-local uve = {uid='u0001',from='android',ad_counts=10,strategy_products={'sfst','wax'},ad_show=false}
-core:run(req_body,uve)
+--local core_t = require('ad_idx.core')
+--local core = core_t:new()
+--local req_body={is_debug=true}
+--local uve = {uid='10001',from='android',ad_counts=10,strategy_products={'sfst','wax'},ad_show=true}
+--core:run(req_body,uve)
+local redis = require('service.redis')
+local resp=redis.getByKey('global_blacklist','local')
+local cjson =require('cjson')
+resp=cjson.decode(resp)
+ngx.print(type(resp))

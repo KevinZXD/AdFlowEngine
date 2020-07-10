@@ -3,10 +3,19 @@
 --- Created by xudong12.
 --- DateTime: 2020/7/6 5:38 PM
 ---
-local _M = {_VERSION = "0.0.1"}
+local _M = { _VERSION = "0.0.1" }
+local cjson = require('cjson')
 -- 根据uid用户唯一标示从平台获取用户的基本画像,一版情况用户画像都存储在redis里面
-function _M.get_user_identifier_info(self,uid)
-    return {age='年龄',area='所处区域',device='设备',sex='性别',hobby='爱好', tag='标签'}
+function _M.get_user_identifier_info(self, uid)
+    if type(uid) ~= 'string' then
+        return  {age='年龄',area='所处区域',device='设备',sex='性别',hobby='爱好', tag='标签'}
+    end
+    local redis = require('service.redis')
+    local uid_profile = redis.getByKey(uid, 'local')
+    if uid_profile then
+        return cjson.decode(uid_profile)
+    end
+    return  {age='年龄',area='所处区域',device='设备',sex='性别',hobby='爱好', tag='标签'}
 
 end
 

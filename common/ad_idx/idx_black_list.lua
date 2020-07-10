@@ -6,6 +6,8 @@
 
 local IUtils = require('lib.itypes')
 local _M = { _VERSION = "0.0.1" }
+local utils = require('lib.utils')
+local cjson = require('cjson')
 
 -- 判断当前访客uid是否在全局黑名单中
 -- @uid string 当前访客uid
@@ -22,7 +24,20 @@ function _M.is_black_user(self, uid)
 end
 
 function _M.is_in_black_list_uid(self, uid)
-         return false
+    if type(uid) ~='string'  then
+        return false
+    end
+    local redis = require('service.redis')
+    local black_list =redis.getByKey('global_blacklist','local') -- '[1,2,3,4]'
+    local status , tb_bl = pcall(cjson.decode,black_list)
+    if status then
+        if  utils.in_table(uid,tb_bl) then
+            return true
+        end
+
+    end
+
+    return false
 
 end
 
