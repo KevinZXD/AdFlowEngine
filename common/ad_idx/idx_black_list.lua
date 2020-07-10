@@ -28,7 +28,8 @@ function _M.is_in_black_list_uid(self, uid)
         return false
     end
     local redis = require('service.redis')
-    local black_list =redis.getByKey('global_blacklist','local') -- '[1,2,3,4]'
+    local const = require('config.redis')
+    local black_list =redis.getByKey('global_blacklist',const.redis_env) -- '[1,2,3,4]'
     local status , tb_bl = pcall(cjson.decode,black_list)
     if status then
         if  utils.in_table(uid,tb_bl) then

@@ -5,17 +5,18 @@
 ---
 local _M = { _VERSION = "0.0.1" }
 local cjson = require('cjson')
--- 根据uid用户唯一标示从平台获取用户的基本画像,一版情况用户画像都存储在redis里面
-function _M.get_stratety_info(self, business)
+-- 根据业务号获取策略,一版情况用户画像都存储在redis里面
+function _M.get_strategy_info(self, business)
     if type(business) ~= 'string' then
-        return { stratety = '策略信息' }
+        return { strategy = '策略信息' }
     end
     local redis = require('service.redis')
-    local business_stra = redis.getByKey(business, 'local')
-    if business_stra then
+    local const = require('config.redis')
+    local business_stra = redis.getByKey(business, const.redis_env)
+    if type(business_stra) == 'table' then
         return cjson.decode(business_stra)
     end
-    return { stratety = '策略信息' }
+    return { strategy = '策略信息' }
 
 end
 

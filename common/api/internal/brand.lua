@@ -23,7 +23,8 @@ function run(self)
     end
     local ads = {}
     local redis = require('service.redis')
-    local resp, _ = redis.getAllByKeyNew('ad_online_brand', 'remote')
+    local const = require('config.redis')
+    local resp, _ = redis.getAllByKeyNew('ad_online_brand', const.redis_env)
 
     local online_brand = {}
     for k, _ in pairs(resp) do

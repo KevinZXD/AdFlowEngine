@@ -9,7 +9,8 @@
 --local uve = {uid='10001',from='android',ad_counts=10,strategy_products={'sfst','wax'},ad_show=true}
 --core:run(req_body,uve)
 local redis = require('service.redis')
-local resp,err=redis.getAllByKeyNew('ad_online_brand','remote')
+local const = require('config.redis')
+local resp,err=redis.getAllByKeyNew('ad_online_brand',const.redis_env)
 
 local cjson =require('cjson')
 for k, v in pairs(resp) do

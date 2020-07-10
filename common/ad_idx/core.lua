@@ -102,13 +102,14 @@ function IDX:apply_gray()
 end
 
 function IDX:apply_strategy()
-    local strategy = require('ad_idx.strategy')
-    self.strategy = strategy:get_stratety_info(self.uve.business)
-    if self.is_debug then
-        ngx.say(cjson.encode(self.strategy))
-    end
+    local strategy_p = require('ad_idx.strategy')
+    self.strategy = strategy_p:get_strategy_info(self.uve.business)
+
     if self.strategy then
         self.uve.strategy = self.strategy
+    end
+    if self.is_debug then
+        ngx.say(cjson.encode(self.strategy))
     end
 end
 
@@ -117,7 +118,8 @@ end
 -- 流量控制：流量百分比、降级等
 function IDX:flow_control()
     local redis = require('service.redis')
-    local flow_control = redis.getByKey('flow_control', 'local')
+    local const = require('config.redis')
+    local flow_control = redis.getByKey('flow_control', const.redis_env)
     if flow_control == 'true' then
         self:response_uve()
     end
