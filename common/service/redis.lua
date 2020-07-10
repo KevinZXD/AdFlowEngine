@@ -54,7 +54,11 @@ end
 -----------------------------------------------------------------------------
 function getByKey(key, poolType)
     local conf = get_conf(poolType)
-    local conn = redis_t.conn(conf.host, conf.port)
+    local auth
+    if poolType == 'remote' then
+        auth=true
+    end
+    local conn = redis_t.conn(conf.host, conf.port, auth)
     local res = conn:get(key)
     if not res then
         return res

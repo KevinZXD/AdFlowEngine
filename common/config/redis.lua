@@ -10,6 +10,9 @@ module(..., package.seeall)
 redis_pool= {
     ['local'] = {
         { ['host'] = '127.0.0.1', ['port'] = 6379 },
+    },
+    ['remote'] = {
+        { ['host'] = '39.106.126.216', ['port'] = 6379 },
     }
 }
 
