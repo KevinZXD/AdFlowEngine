@@ -13,8 +13,8 @@ function IDX:new(o)
     return o
 end
 local PRODUCT_MODULE_CLASSES = {}
-local PRODUCT_MODNAMES = {sfst='ad_sfst',wax='ad_wax'}
-for product_name,module_name in pairs(PRODUCT_MODNAMES) do
+local PRODUCT_MODNAMES = { sfst = 'ad_sfst', wax = 'ad_wax' }
+for product_name, module_name in pairs(PRODUCT_MODNAMES) do
     PRODUCT_MODULE_CLASSES[product_name] = require(string.format("ad_idx.modules.%s", module_name))
 end
 
@@ -24,16 +24,16 @@ end
 -- param req_body为ad_uve请求体body字符串
 -- param uve 解析后的ad_uve请求体结构
 function IDX:init(req_body, uve)
-    self.uve=uve
+    self.uve = uve
     self.req_body = req_body
     self.post_data = {} -- 请求广告引擎需要的POST数据
     -- 本次流量要出哪些产品线的广告 {"A", "B",...}
     self.strategy_products = uve.strategy_products -- 业务策略中指出的且IDX已支持的产品线, 数组
-    self.products =uve.strategy_products -- 经过流量控制等过滤后，最终决定访问哪些产品线, 数组
+    self.products = uve.strategy_products -- 经过流量控制等过滤后，最终决定访问哪些产品线, 数组
     self.module_dict = {} -- 对应各个引擎模块 {"product":module, ...}
     self.capture_requests = {} -- capture的请求串，数组
     self.responses = {} -- 并行请求各业务线的返回结果，数组
-    self.target_ads= {}
+    self.target_ads = {}
     self.winners = {} -- 竞价胜出的广告, 数组
     self.is_debug = req_body.is_debug
 end
@@ -108,9 +108,9 @@ function IDX:apply_strategy()
         ngx.say(cjson.encode(self.strategy))
     end
     if self.strategy then
-    self.uve.strategy=self.strategy
+        self.uve.strategy = self.strategy
     end
-    end
+end
 
 
 
@@ -118,19 +118,20 @@ function IDX:apply_strategy()
 function IDX:flow_control()
     local redis = require('service.redis')
     local flow_control = redis.getByKey('flow_control', 'local')
-    if flow_control then
+    if flow_control == 'true' then
         self:response_uve()
     end
 end
 
-function IDX:prerequest_filter() end
+function IDX:prerequest_filter()
+end
 
 function IDX:prerequest_handle()
     local profile = require('ad_idx.profile')
     -- 获取用户唯一标识
     self.user_identifier_info = profile:get_user_identifier_info(self.uve.uid)
     if self.user_identifier_info then
-        self.uve.profile=self.user_identifier_info
+        self.uve.profile = self.user_identifier_info
     end
 
 end
@@ -164,7 +165,7 @@ end
 -- @return true 成功，false 失败
 function IDX:init_module()
     local module_dict = {}
-    for _,product in pairs(self.products) do
+    for _, product in pairs(self.products) do
         local module_class = PRODUCT_MODULE_CLASSES[product]
         local m = module_class:new(self.uve)
         module_dict[product] = m
@@ -177,11 +178,11 @@ end
 function IDX:generate_requests()
     -- 若某product生成request失败，则不请求该product的引擎，它也不参与竞价。
     local products = {}
-    for _,product in pairs(self.products) do
+    for _, product in pairs(self.products) do
         local m = require(string.format("ad_idx.modules.ad_%s", product))
         local rc, request = m:generate_request(self.uve)
         if self.is_debug then
-            ngx.say('reload module  '.. m.product_name)
+            ngx.say('reload module  ' .. m.product_name)
         end
         if rc == true then
             table.insert(products, product)
@@ -207,14 +208,14 @@ end
 
 -- 解析各广告引擎的返回结果
 function IDX:parse_responses()
-    for i,product in ipairs(self.products) do
+    for i, product in ipairs(self.products) do
         if self.is_debug then
-            ngx.say(product..'  response')
+            ngx.say(product .. '  response')
             ngx.say(cjson.encode(self.responses[i]))
         end
         local m = self.module_dict[product]
         m:parse_response(self.responses[i])
-        table.insert(self.target_ads,m.result_dict)
+        table.insert(self.target_ads, m.result_dict)
         if self.is_debug then
             ngx.say("########## Response " .. product)
             ngx.say(self.responses[i].body)
@@ -282,7 +283,7 @@ function IDX:bid()
             cands = cands,
             model_version = "v1",
             ad_counts = self.uve.ad_counts,
-            products=self.products
+            products = self.products
         }
         local model = BidModel:new(params)
         winners = model:bid()
