@@ -109,18 +109,15 @@ function bid_only_one(cands)
     if next(cands) == nil then
         return nil
     end
-
     -- 竞价权重竞价
     local max_wt_cands = _bid_by_weight(cands)
     if not next(max_wt_cands) then
         return nil
     end
-
     -- 最高优先级候选仅一个, 直接胜出
     if #max_wt_cands == 1 then
         return max_wt_cands[1]
     end
-
     -- 最高优先级候选有多个, 根据渠道将候选划分为运营广告和普通广告两类
     local inner_cands = {}
     local normal_cands = {}
@@ -146,7 +143,6 @@ function bid_only_one(cands)
         -- 默认返回第一个竞价值最高候选
         return max_score_cands[1]
     end
-
     -- 运营广告竞价
     if next(inner_cands) then
         -- 运营广告候选仅一个, 直接胜出
